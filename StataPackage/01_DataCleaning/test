@@ -1,1 +1,6 @@
-
+Order
+1. _01_rename (rename variables other than covariate and outcome variables)
+2. _01_covariate (rename covariate variables)
+3. _01_outcome (rename outcome variables)
+4. _01_missing (drop rows with missing data)
+5. _01_check (feasibility check)
