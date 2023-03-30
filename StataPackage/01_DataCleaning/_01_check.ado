@@ -6,7 +6,7 @@ program define _01_check
 	* 00 sort by ChoiceRank within each student
 	sort StudentID ChoiceRank
 	
-	* 01 Inconsist grade, outcomes, and tie-breaker within a student
+	* 01 Inconsistency within a student (grade, outcomes, and tie-breaker)
 	quietly{	
 		levelsof StudentID, local(studentlist)
 		foreach student of local studentlist {
@@ -39,7 +39,7 @@ program define _01_check
 		}
 	}
 	
-	* 02 Inconsistency within a school
+	* 02 Inconsistency within a school (treatment, capacity, advantage)
 	quietly{	
 		levelsof Year, local(yearlist)
 		foreach year of local yearlist {
@@ -47,18 +47,24 @@ program define _01_check
 			foreach grade of local gradelist {
 				levelsof SchoolID, local(schoollist)
 				foreach school of local schoollist {
+					
+					* treatment
 					levelsof Treatment if (Year == `year') & (Grade == `grade') & (SchoolID == `school'), local(treatment)
 					local numtreat : word count `treatment'
-					levelsof Capacity if (Year == `year') & (Grade == `grade') & (SchoolID == `school'), local(capacity)
-					local numcapa : word count `capacity'
-					levelsof Advantage if (Year == `year') & (Grade == `grade') & (SchoolID == `school'), local(advantage)
-					local numadv : word count `advantage'
 					if `numtreat' > 1 {
 					di as error "Inconsistent $user_Treatment detected for $user_SchoolID `school'"
 					}
+					
+					* capacity
+					levelsof Capacity if (Year == `year') & (Grade == `grade') & (SchoolID == `school'), local(capacity)
+					local numcapa : word count `capacity'
 					if `numcapa' > 1 {
 					di as error "Inconsistent $user_Capacity detected for $user_SchoolID `school'"
 					}
+					
+					* advantage
+					levelsof Advantage if (Year == `year') & (Grade == `grade') & (SchoolID == `school'), local(advantage)
+					local numadv : word count `advantage'
 					if `numadv' > 2 { 
 					di as error "Inconsistent $user_Advantage detected for $user_SchoolID `school'"
 					}
@@ -93,13 +99,13 @@ program define _01_check
 		}
 	}
 	
-	* 05 Inconsecutive choice rank
+	* 05 Inconsecutive choice rank (can be shortened later with getting max rank)
 	quietly{	
 		levelsof StudentID, local(studentlist)
 		foreach student of local studentlist {
 			count if StudentID == `student'
 			levelsof ChoiceRank if StudentID == `student', local(rankset)
-			local curr_max = 0
+			local curr_max = 0 
 			foreach rank of local rankset {
 				if `rank' > `curr_max' {
 					local curr_max = `rank'
@@ -115,10 +121,14 @@ program define _01_check
 	quietly{	
 		levelsof StudentID, local(studentlist)
 		foreach student of local studentlist {
+			
+			* assignment
 			summarize Assignment if StudentID == `student' & Assignment == 1
 			if `r(N)' >  1 {
 				di as error "Multiple $user_Assignment for $user_StudentID `student'"
 			}
+			
+			* enrollment
 			summarize Enrollment if StudentID == `student' & Enrollment == 1
 			if `r(N)' >  1 {
 				di as error "Multiple $user_Enrollment for $user_StudentID `student'"
@@ -126,7 +136,7 @@ program define _01_check
 		}
 	}
 	
-	* 07 Over capacity
+	* 07 Over capacity (assignment, enrollment)
 	quietly{	
 		levelsof Year, local(yearlist)
 		foreach year of local yearlist {
@@ -142,7 +152,8 @@ program define _01_check
 					local capa = r(mean)     
 					summarize Priority if (Year == `year') & (Grade == `grade') & (SchoolID == `school') & (Assignment == 1)
 					local max_pri = r(max)
-
+					
+					* check (1) if capacity is filled and (2) if there is someone not guaranteed an assignment
 					if (`assigned' > `capa') & (`max_pri' > 0) {
 					di as error "More $user_StudentID are assigned than $user_Capacity at $user_SchoolID `school'"
 					}
@@ -169,15 +180,22 @@ program define _01_check
 				summarize Assignment if (StudentID == `student') & (ChoiceRank == `rank')
 				local assignment = r(mean)
 				
+				* check: student is guaranteed an assignment at this school and not assigned to any preferred school, she is not assigned at this school.
 				if (`priority' == 0) & (`assign_switch' == 0) & (`assignment' == 0) {
 					di as error "$user_StudentID `student' is not assigned at the $user_SchoolID where she was guaranteed an assignment"
 				}
+				
+				* check: student was guaranteed an assignment at a school she prefers to this school, she was not assigned at that school but is guaranteed at this school.
 				if (`priority_switch' == 1) & (`assign_switch' == 0) & (`assignment' == 1) {
 					di as error "$user_StudentID `student' is not assigned at the $user_SchoolID where she was guaranteed an assignment "
 				}
+				
+				* Turn on assign_switch if the student is assigned
 				if (`assignment' == 1) {
 					local assign_switch = 1
 				}
+				
+				* Turn on priority_switch if the student is guaranteed an assignment
 				if (`priority' == 0) {
 					local priority_switch = 1
 				}
@@ -196,6 +214,7 @@ program define _01_check
 			levelsof ChoiceRank if (StudentID == `student'), local(ranklist)
 			foreach rank of local ranklist {
 				
+				* save applicant position value and assignment at this school
 				summarize Priority if (StudentID == `student') & (ChoiceRank == `rank')
 				local priority = r(mean)
 				summarize EffectiveTiebreaker if (StudentID == `student') & (ChoiceRank == `rank')
@@ -204,12 +223,17 @@ program define _01_check
 				summarize Assignment if (StudentID == `student') & (ChoiceRank == `rank')
 				local assignment = r(mean)
 				
+				* check: student has better applicant position at a school she prefers to this school, she was not assigned there but is assigned here.
 				if (`assign_switch' == 0) & (`position' > `best_position') & (`assignment' == 1) {
 					di as error "Matching is not stable for $user_StudentID `student'"
 				}
+				
+				* turn on assign_switch
 				if (`assignment' == 1) {
 						local assign_switch = 1
 					}
+				
+				* update best position
 				if (`position' < `best_position') {
 					local best_position = `position'
 				}
@@ -217,7 +241,7 @@ program define _01_check
 		}
 	}
 	
-	* 10 Outlier
+	* 10 Outlier(check if an abnormally large value found in a column that is unlikely to have a huge outlier) (grade, choice rank, priority)
 	quietly{
 		summarize Grade
 		if r(max) / r(mean) > 10{
@@ -233,7 +257,7 @@ program define _01_check
 		}
 	}
 	
-	* 11 Correlation
+	* 11 Correlation (check if correlation between priority and default tie-breaker value is too big)
 	quietly{	
 		levelsof Year, local(yearlist)
 		foreach year of local yearlist {
@@ -242,15 +266,21 @@ program define _01_check
 				levelsof SchoolID, local(schoollist)
 				foreach school of local schoollist {
 				
+					* preserve the original data
 					preserve
+					
+					* filter data and calculate correlation
 					keep if (Year == `year') & (Grade == `grade') & (SchoolID == `school')
 					matrix accum R = Priority DefaultTiebreaker, noconstant deviations
 					matrix R = corr(R)
 					local corr = R[2,1]
 
+					* check correlation
 					if (`corr' > 0.9) {
 						di as error "Correlation between $user_Priority and $user_DefaultTieBreaker is high for $user_Year `year', $user_Grade `grade', $user_SchoolID `school'"
 					}
+					
+					* restore data 
 					restore
 				}
 			}
