@@ -3,7 +3,7 @@ program define _01_rename
     
     syntax varlist
 	
-	* save user-defined variable names
+	* save user-defined variable names so that we can use them when we report errors in _01_check
 	global user_variables "`varlist'"
 	global user_StudentID : word 1 of `varlist'
 	global user_Year : word 2 of `varlist'
@@ -21,6 +21,7 @@ program define _01_rename
 	global user_Assignment : word 14 of `varlist'
 	global user_Enrollment : word 15 of `varlist'
 	
+	* rename variables
 	rename (`varlist') (StudentID Year Grade ChoiceRank SchoolID Treatment Capacity Priority DefaultTiebreakerIndex TiebreakerStudentGroupIndex Advantage DefaultTiebreaker EffectiveTiebreaker Assignment Enrollment)
 	
 	dis "Your variables are renamed."
