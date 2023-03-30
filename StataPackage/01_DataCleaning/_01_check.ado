@@ -6,6 +6,7 @@ program define _01_check
 	* 00 sort by ChoiceRank within each student
 	sort StudentID ChoiceRank
 	
+	* test
 	* 01 Inconsistency within a student
 	quietly{	
 		levelsof StudentID, local(studentlist)
