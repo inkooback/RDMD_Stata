@@ -6,31 +6,34 @@ program define _01_check
 	* 00 sort by ChoiceRank within each student
 	sort StudentID ChoiceRank
 	
-	* 01 Inconsistency within a student
+	* 01 Inconsist grade, outcomes, and tie-breaker within a student
 	quietly{	
 		levelsof StudentID, local(studentlist)
 		foreach student of local studentlist {
+			
+			* grade
 			levelsof Grade if StudentID == `student', local(grades)
 			local numgrades : word count `grades'
-			levelsof Outcome1 if StudentID == `student', local(outcome1)
-			local numoutcome1 : word count `outcome1'
-			levelsof Outcome2 if StudentID == `student', local(outcome2)
-			local numoutcome2 : word count `outcome2'
 			if `numgrades' > 1 {
-				di as error "Inconsistent $user_Grade detected for student `student'"
+				di as error "Inconsistent grade detected for student `student'"
 			}
-			if `numoutcome1' > 1 {
-				di as error "Inconsistent $user_Outcome1 detected for student `student'"
+			
+			* outcomes
+			foreach outcome of varlist Outcome* {
+				levelsof `outcome' if StudentID == `student', local(set_outcome)
+				local num : word count `set_outcome'
+				if `num' > 1 {
+					di as error "Inconsistent `outcome' detected for student `student'"
+				}
 			}
-			if `numoutcome2' > 1 {
-				di as error "Inconsistent $user_Outcome2 detected for student `student'"
-			}
+			
+			* default tie-breaker index
 			levelsof DefaultTiebreakerIndex, local(defaultlist)
 			foreach default of local defaultlist {
 				levelsof DefaultTiebreaker if (StudentID == `student') & (DefaultTiebreakerIndex == `default'), local(breakers)
 				local numbreakers : word count `breakers'
 				if `numbreakers' > 1 {
-				di as error "Inconsistent $user_DefaultTiebreaker value detected for $user_StudentID `student' and Default Tie-breaker `default'"
+					di as error "Inconsistent Default Tie breaker value detected for student `student' and Default Tie-breaker `default'"
 				}
 			}
 		}
