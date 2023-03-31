@@ -23,7 +23,7 @@ program define _01_check
 				levelsof `outcome' if StudentID == `student', local(set_outcome)
 				local num : word count `set_outcome'
 				if `num' > 1 {
-					di as error "Inconsistent `outcome' detected for user_StudentID `student'"
+					di as error "Inconsistent `outcome' detected for $user_StudentID `student'"
 				}
 			}
 			
@@ -33,7 +33,7 @@ program define _01_check
 				levelsof DefaultTiebreaker if (StudentID == `student') & (DefaultTiebreakerIndex == `default'), local(breakers)
 				local numbreakers : word count `breakers'
 				if `numbreakers' > 1 {
-					di as error "Inconsistent $DefaultTiebreaker detected for $user_StudentID `student' and $user_DefaultTieBreaker `default'"
+					di as error "Inconsistent $user_DefaultTiebreaker detected for $user_StudentID `student' and $user_DefaultTieBreaker `default'"
 				}
 			}
 		}
