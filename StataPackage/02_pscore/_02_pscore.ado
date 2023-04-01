@@ -6,7 +6,7 @@ program define _02_pscore
 	* pick one program
 	keep if (Year == 2017) & (Grade == 1) & (SchoolID == 1)
 	
-	* count number of unique types
+	* 0. count number of unique types
 	egen type = concat(SchoolID Priority), punct(", ")
 
 	preserve
@@ -17,24 +17,24 @@ program define _02_pscore
 	global num_type = `r(N)' 
 	restore
 	
-	* Generate marginal priority (priority group with last offer)
+	* 1. Generate marginal priority (priority group with last offer)
 	bys SchoolID: egen marginal_priority = max(Priority * Assignment)
 	format marginal_priority %12.0g
 
-	* Generate marginal indicator
+	* 1-1. Generate marginal indicator
 	gen marginal = Priority == marginal_priority
 
-	* Generate offer count by program
+	* 1-2. Generate offer count by program
 	bys SchoolID Priority: egen count = sum(Assignment)
 
-	* Generate applicant position
+	* 2. Generate applicant position
 	gen position = Priority + EffectiveTiebreaker
 	order position, after(EffectiveTiebreaker)
 
-	* Set cutoff as the last *marginal* student who gets an offer
+	* 3. Set cutoff as the last *marginal* student who gets an offer
 	bys SchoolID: egen double cutoff  = max(Assignment * marginal * position)
 
-	* Calculate tie-breaker cutoff
+	* 4. Calculate tie-breaker cutoff
 	gen tie_cutoff = cutoff - marginal_priority
 	
 end
