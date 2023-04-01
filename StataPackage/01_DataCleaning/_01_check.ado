@@ -80,7 +80,7 @@ program define _01_check
 			count if StudentID == `student'
 			levelsof ChoiceRank if StudentID == `student', local(rankset)
 			local numset : word count `rankset'
-			if `r(N)' !=  `numset' {
+			if `r(N)' >  `numset' {
 				di as error "Repeated $user_ChoiceRank detected for $user_StudentID `student'"
 			}
 		}
@@ -93,7 +93,7 @@ program define _01_check
 			count if StudentID == `student'
 			levelsof SchoolID if StudentID == `student', local(schoolset)
 			local numset : word count `schoolset'
-			if `r(N)' !=  `numset' {
+			if `r(N)' >  `numset' {
 				di as error "Repeated $user_SchoolID detected for $user_StudentID `student'"
 			}
 		}
