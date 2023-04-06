@@ -40,7 +40,7 @@ program define _02_pscore
 	*======================================= 5. Calculate bandwidth ==========================================
 	
 	// Generate indicator variables for programs using rank variable to break ties
-	egen NonLotteryID = group(SchoolID) if NonLottery == 0
+	egen NonLotteryID = group(SchoolID) if NonLottery == 1
 	
 	// Generate centered position variable (cutoff = 0)
 	gen Centered = Position - Cutoff
@@ -49,7 +49,7 @@ program define _02_pscore
 	bys SchoolID: egen FullyRanked = max(Marginal * (Centered > 0 ) * NonLottery)
 	la var FullyRanked "Flag if non-lottery program had marginal students with Centered > 0 i.e. students ranked above the cutoff"
 	
-	// Run either this program only once and use output for the other outcomes and merge back in
+	// Run this program only once and use output for the other outcomes and merge back in
 	
 	_02_bw `bw_type'
 	
@@ -65,13 +65,9 @@ program define _02_pscore
 	*========================= copy =========================
 	
 	* Generate indicators for applicants in/above/below the bandwidth
-	/*	Note that we do this twice due to the fact that we limit risk to programs
-		where at least 5 applicants are on either side of the cutoff within
-		the bandwidth.
-		Hence, after generating the indicators, we find the number of students in the
-		bandwidth, then set the bandwidth to missing for programs with fewer than
-		5 applicants on either side of the cutoff within the bandwidth, and then
-		recalculate whether an applicant is in the bandwidth */
+	/*	Note that we do this twice due to the fact that we limit risk to programs where at least 5 applicants are on either side of the cutoff within the bandwidth.
+	    Hence, after generating the indicators, we find the number of students in the bandwidth, then set the bandwidth to missing for programs with fewer than
+		5 applicants on either side of the cutoff within the bandwidth, and then recalculate whether an applicant is in the bandwidth */
 
 	// Generate indicator for being in the bandwidth
 	gen in_bw =  (Centered > -bw) &  (Centered <= bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
@@ -111,28 +107,26 @@ program define _02_pscore
 
 	// Generate indicator for programs with fewer than (bw_n) on either side of the
 	// cutoff within the bandwidth
-	bysort SchoolID: gen no_in_bw_below_`bw_n' = no_in_bw_above < `bw_n' | no_in_bw_below < `bw_n'
+	bysort SchoolID: gen fewer = (no_in_bw_above < `bw_n') | (no_in_bw_below < `bw_n')
 
 	// Replace bandwidth to missing for such programs (no new risk)
-	replace bw = . if no_in_bw_below_`bw_n' == 1
+	replace bw = . if fewer == 1
 
 	// Drop indicators
 	drop max_no_in_bw_above max_no_in_bw_below no_in_bw_below no_in_bw_above
 
 	*** Truncate the bandwidth when it is much larger on one side than the other (because it is close to the top or bottom of the priority)
 
-	* First, generate minimum and maximum value (in absolute value) of rank in the
-	* bandwidth
-	sort prog_id_augmented
-	by prog_id_augmented : egen max_bw_val = max(hs_rank_centered) if in_bw == 1
+	* First, generate minimum and maximum value (in absolute value) of rank in the bandwidth
+	sort SchoolID
+	by SchoolID : egen max_bw_val = max(Centered) if in_bw == 1
 	assert max_bw_val >= 0
-	by prog_id_augmented : egen min_bw_val = min(hs_rank_centered) if in_bw == 1
-	by prog_id_augmented : gen abs_min_bw_val = abs(min_bw_val)
+	by SchoolID : egen min_bw_val = min(Centered) if in_bw == 1
+	by SchoolID : gen abs_min_bw_val = abs(min_bw_val)
 
-	* Generate variable that takes minimum absolute value across the left-most
-	* and right-most extremes of the bw.
+	* Generate variable that takes minimum absolute value across the left-most and right-most extremes of the bw.
 	gen bw_mod_temp = min(max_bw_val, abs_min_bw_val)
-	by prog_id_augmented : egen bw_mod = min(bw_mod_temp)
+	by SchoolID : egen bw_mod = min(bw_mod_temp)
 
 	* Summary stats of the scale of the difference between the two bandwidths
 	/*egen tag = tag(prog_id_augmented)
@@ -149,19 +143,18 @@ program define _02_pscore
 
 	*** Re-do the in/above/below bandwidth indicators after implementing the count
 	drop in_bw below_bw above_bw
+	
+	// Generate indicator for being in the bandwidth
+	gen in_bw =  (Centered > -bw) &  (Centered <= bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
 
-	gen in_bw =   hs_rank_centered > -bw &  hs_rank_centered <= bw & (marginal == 1) & !missing(bw)  ///
-		if lottery_flag_mod == 0  & edopt == 0
-	replace in_bw = hs_rank_centered > -bw &  hs_rank_centered <= bw  & (marginal == 1) & !missing(bw) & indi_min_cutoff_dist == 1 /// 
-		if lottery_flag_mod == 0  & edopt == 1
+	// Generate indicator for being below the bandwidth
+	gen below_bw =  (Centered <= -bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
+	
+	// Generate indicator for being above the bandwidth
+	gen above_bw =  (Centered > -bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
 
-	gen below_bw = hs_rank_centered <= -bw 		& (marginal == 1) & !missing(bw) if lottery_flag_mod == 0 & edopt == 0
-	replace below_bw = hs_rank_centered <= 0	  	& (marginal == 1) & !missing(bw) if lottery_flag_mod == 0 & edopt == 1 & in_bw == 0
-
-	gen above_bw = hs_rank_centered >  bw 		& (marginal == 1) & !missing(bw) if lottery_flag_mod == 0 & edopt == 0
-	replace above_bw = hs_rank_centered >  0 	 	& (marginal == 1) & !missing(bw) if lottery_flag_mod == 0 & edopt == 1 & in_bw == 0
-
-	egen check = rowtotal(in_bw below_bw above_bw) if marginal == 1 & lottery_flag_mod == 0 & !missing(bw)
+	// check
+	egen check = rowtotal(in_bw below_bw above_bw) if (Marginal == 1) & (NonLottery == 1) & !missing(bw)
 	sum check
 	assert `r(max)' == 1 & `r(min)' == 1
 	drop check
@@ -170,7 +163,7 @@ program define _02_pscore
 	replace has_bw = bw != .
 
 	// Save an intermediary file before creating the relevant indicators
-	save "${data_working}program_pscore`modification_str'`suffix'_`year'_before_theta`grad_flag'_`bw_type'.dta", replace
+	save "intermediary_`bw_type'.dta", replace
 
 *** Generate variables for robustness checks
 	// Duplicates, gaps and number of applicants in BW
