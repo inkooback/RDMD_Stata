@@ -10,7 +10,6 @@ version 16.1
 syntax anything [if] [in] [, c(real 0) ibw(real 0) fuzzy(varname) dm(real 0) ck(real 3.4375 )]
 
 tokenize "`anything'"
-
 local y `1'
 local x `2'
 

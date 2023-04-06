@@ -51,11 +51,13 @@ program define _02_pscore
 	
 	// Run either this program only once and use output for the other outcomes and merge back in
 	
-	_02_bw
+	_02_bw `bw_type'
+	
 	* Merge bw back in
-	merge m:1 SchoolID using "'bw_type'_bw.dta", assert(1 3) nogen
+	merge m:1 SchoolID using "`bw_type'_bw.dta", assert(1 3) nogen
+	
 	* Implement selected bandwidth
-	gen bw = 'bw_type'_bw
+	gen bw = `bw_type'_bw
 
 	// Set bw to missing if lottery school
 	replace bw = . if NonLottery == 0
@@ -93,30 +95,31 @@ program define _02_pscore
 	// Set bandwidth to missing for programs where fewer than five kids are on one or both sides of the cutoff within the bandwidth
 
 	// Number of applicants in bandwidth
-	bysort prog_id_aug: egen no_in_bw = total(in_bw)
+	bysort SchoolID: egen no_in_bw = total(in_bw)
 
 	// Number of applicants in bandwidth above cutoff
-	bysort prog_id_aug: egen no_in_bw_above = total(in_bw) if hs_rank_centered > 0 & hs_rank_centered!=.
+	bysort SchoolID: egen no_in_bw_above = total(in_bw) if Centered > 0 & Centered != .
 
 	// Number of applicants in bandwidth below cutoff
-	bysort prog_id_aug: egen no_in_bw_below = total(in_bw) if hs_rank_centered <= 0 & hs_rank_centered!=.
-	bysort prog_id_aug: egen max_no_in_bw_above = max(no_in_bw_above)
-	bysort prog_id_aug: egen max_no_in_bw_below = max(no_in_bw_below)
+	bysort SchoolID: egen no_in_bw_below = total(in_bw) if Centered <= 0 & Centered != .
+	
+	bysort SchoolID: egen max_no_in_bw_above = max(no_in_bw_above)
+	bysort SchoolID: egen max_no_in_bw_below = max(no_in_bw_below)
+	
 	replace no_in_bw_above =  max_no_in_bw_above
 	replace no_in_bw_below =  max_no_in_bw_below
 
-	// Generate indicator for programs with fewer than 5 on either side of the
+	// Generate indicator for programs with fewer than (bw_n) on either side of the
 	// cutoff within the bandwidth
-	bysort prog_id_aug: gen no_in_bw_below_10 = no_in_bw_above < 5 | no_in_bw_below < 5
+	bysort SchoolID: gen no_in_bw_below_`bw_n' = no_in_bw_above < `bw_n' | no_in_bw_below < `bw_n'
 
 	// Replace bandwidth to missing for such programs (no new risk)
-	replace bw = . if no_in_bw_below_10 == 1
+	replace bw = . if no_in_bw_below_`bw_n' == 1
 
 	// Drop indicators
 	drop max_no_in_bw_above max_no_in_bw_below no_in_bw_below no_in_bw_above
 
-*** Truncate the bandwidth when it is much larger on one side than the other
-	* (because it is close to the top or bottom of the priority)
+	*** Truncate the bandwidth when it is much larger on one side than the other (because it is close to the top or bottom of the priority)
 
 	* First, generate minimum and maximum value (in absolute value) of rank in the
 	* bandwidth
@@ -144,12 +147,13 @@ program define _02_pscore
 	* Drop irrelevant variables
 	drop bw_mod_temp bw_mod max_bw_val min_bw_val abs_min_bw_val
 
-*** Re-do the in/above/below bandwidth indicators after implementing the count
+	*** Re-do the in/above/below bandwidth indicators after implementing the count
 	drop in_bw below_bw above_bw
 
 	gen in_bw =   hs_rank_centered > -bw &  hs_rank_centered <= bw & (marginal == 1) & !missing(bw)  ///
 		if lottery_flag_mod == 0  & edopt == 0
-	replace in_bw = hs_rank_centered > -bw &  hs_rank_centered <= bw  & (marginal == 1) & !missing(bw) & indi_min_cutoff_dist == 1 if lottery_flag_mod == 0  & edopt == 1
+	replace in_bw = hs_rank_centered > -bw &  hs_rank_centered <= bw  & (marginal == 1) & !missing(bw) & indi_min_cutoff_dist == 1 /// 
+		if lottery_flag_mod == 0  & edopt == 1
 
 	gen below_bw = hs_rank_centered <= -bw 		& (marginal == 1) & !missing(bw) if lottery_flag_mod == 0 & edopt == 0
 	replace below_bw = hs_rank_centered <= 0	  	& (marginal == 1) & !missing(bw) if lottery_flag_mod == 0 & edopt == 1 & in_bw == 0
@@ -162,11 +166,11 @@ program define _02_pscore
 	assert `r(max)' == 1 & `r(min)' == 1
 	drop check
 
-// Re-tag if the program has a bandwidth (tags screened programs)
-replace has_bw = bw != .
+	// Re-tag if the program has a bandwidth (tags screened programs)
+	replace has_bw = bw != .
 
-// Save an intermediary file before creating the relevant indicators
-save "${data_working}program_pscore`modification_str'`suffix'_`year'_before_theta`grad_flag'_`bw_type'.dta", replace
+	// Save an intermediary file before creating the relevant indicators
+	save "${data_working}program_pscore`modification_str'`suffix'_`year'_before_theta`grad_flag'_`bw_type'.dta", replace
 
 *** Generate variables for robustness checks
 	// Duplicates, gaps and number of applicants in BW

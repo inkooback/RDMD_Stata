@@ -1,9 +1,9 @@
-* This file is a copy of version 8.0.3 (06-04-2020) of rdbwselect from
-* the rdrobust package. We use this to calculate the CCFT bandwidths.
+* This file is a copy of version 8.0.3 (06-04-2020) of rdbwselect from the rdrobust package. We use this to calculate the CCFT bandwidths.
 *
 *!version 8.0.3  06-04-2020
 
 capture program drop _02_ccft
+
 program define _02_ccft, eclass
 	version 16.1
 	syntax anything [if] [in] [, c(real 0) fuzzy(string) deriv(real 0) p(real 1) q(real 0) covs(string) covs_drop(string) kernel(string) weights(string) bwselect(string) vce(string) scaleregul(real 1) all nochecks masspoints(string) bwcheck(real 0) bwrestrict(string) stdvars(string)]
