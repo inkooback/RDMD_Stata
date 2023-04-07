@@ -1,5 +1,5 @@
 * This file is a copy of version 8.0.3 (06-04-2020) of rdbwselect from the rdrobust package. We use this to calculate the CCFT bandwidths.
-*
+
 *!version 8.0.3  06-04-2020
 
 capture program drop _02_ccft

@@ -1,3 +1,4 @@
+capture program drop _02_bw
 program define _02_bw
     version 15.0
     
@@ -59,6 +60,6 @@ program define _02_bw
 	isid SchoolID
 
 	* Save
-	save "`bw_type'_bw.dta", replace
+	save "/Users/inkoo/Desktop/Spring 23/Atila/code/Stata/`bw_type'_bw.dta", replace
 	
 	restore

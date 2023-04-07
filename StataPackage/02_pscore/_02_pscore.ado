@@ -1,7 +1,12 @@
+capture program drop _02_pscore
 program define _02_pscore
     version 15.0
     
-    syntax bw_type bw_n [if]
+    syntax anything [if]
+	
+	tokenize "`anything'"
+	local bw_type `1'
+	local bw_n `2'
 	
 	* pick one year and grade
 	keep if (Year == 2017) & (Grade == 1)
@@ -19,7 +24,7 @@ program define _02_pscore
 	
 	* 1. Generate marginal priority (priority group with last offer)
 	bys SchoolID: egen MarginalPriority = max(Priority * Assignment)
-	format marginal_priority %12.0g
+	format MarginalPriority %12.0g
 
 	* 1-1. Generate marginal indicator
 	gen Marginal = Priority == MarginalPriority
@@ -51,10 +56,71 @@ program define _02_pscore
 	
 	// Run this program only once and use output for the other outcomes and merge back in
 	
-	_02_bw `bw_type'
+	************* Integrate _02_bw *****************
+	* Keep only marginal students for the bandwidths
+	preserve
+	keep if Marginal == 1
+	
+	* make a list of variables starts with "Outcome"
+	ds Outcome*
+	
+	* Standardize all outcomes because we're comparing across bandwidths
+	foreach test of varlist `r(varlist)' {
+		egen mean_`test' = mean(`test')
+		egen sd_`test' = sd(`test')
+		gen ss_`test' = (`test' -  mean_`test') / sd_`test'
+		}
+	
+	ds ss_Outcome*
+	* Loop over standardized outcomes
+	foreach test of varlist `r(varlist)' {
+
+		* Generate (missing) bandwidth variable
+		gen `bw_type'_`test' = .
+
+		summarize NonLotteryID
+		forval i = 1/`r(max)' {
+
+			* Create bandwidth for applicants who are applying to a non-lottery program that is fully ranked and only look at the marginal applicants.
+
+			* IK
+			if "`bw_type'" == "ik" {
+			noi cap: _02_ik `test' Centered if (NonLotteryID == `i') & (FullyRanked == 1) & (Marginal == 1), ck(5.40)
+			if _rc == 0 replace ik_`test' = `r(h_opt)' if NonLotteryID == `i'
+			}
+			
+			* CCFT
+			else if "`bw_type'" == "ccft" {
+			noi cap: _02_ccft `test' Centered if (NonLotteryID == `i') & (FullyRanked == 1) & (Marginal == 1), kernel(uniform) c(0)
+			if _rc == 0 replace ccft_`test' = `e(h_mserd)' if NonLotteryID == `i'
+			}
+			
+			* Catch incorrect
+			else {
+				di "Incorrect bandwidth option (must be ik or ccft)"
+				stop
+			}
+		}
+	}
+	
+	* Generate minimum bandwidth across the different outcomes for each Non-lottery program
+	ds `bw_type'_ss_Outcome*
+	
+	egen `bw_type'_bw = rowmin(`r(varlist)')
+	
+	* Keep program ID and bandwidths
+	keep NonLotteryID SchoolID `bw_type'_bw
+
+	* Make unique
+	duplicates drop
+	isid SchoolID
+
+	* Save
+	save "/Users/inkoo/Desktop/Spring 23/Atila/code/Stata/`bw_type'_bw.dta", replace
+	restore
 	
 	* Merge bw back in
-	merge m:1 SchoolID using "`bw_type'_bw.dta", assert(1 3) nogen
+	merge m:1 SchoolID using "/Users/inkoo/Desktop/Spring 23/Atila/code/Stata/`bw_type'_bw.dta", assert(1 3) nogen
 	
 	* Implement selected bandwidth
 	gen bw = `bw_type'_bw
@@ -76,7 +142,7 @@ program define _02_pscore
 	gen below_bw =  (Centered <= -bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
 	
 	// Generate indicator for being above the bandwidth
-	gen above_bw =  (Centered > -bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
+	gen above_bw =  (Centered > bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
 
 	// Generate check that each applicant is at max in/below/above the bandwidth
 	egen check = rowtotal(in_bw below_bw above_bw) if (Marginal == 1) & (NonLottery == 1) & !missing(bw)
@@ -114,7 +180,8 @@ program define _02_pscore
 
 	// Drop indicators
 	drop max_no_in_bw_above max_no_in_bw_below no_in_bw_below no_in_bw_above
-
+end
+/*	
 	*** Truncate the bandwidth when it is much larger on one side than the other (because it is close to the top or bottom of the priority)
 
 	* First, generate minimum and maximum value (in absolute value) of rank in the bandwidth
