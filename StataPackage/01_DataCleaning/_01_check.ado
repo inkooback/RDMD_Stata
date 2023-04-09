@@ -1,3 +1,4 @@
+capture program drop _01_check
 program define _01_check
     version 15.0
     
@@ -287,6 +288,18 @@ program define _01_check
 		}
 	}
 	
+	* 12 Inconsistency between Tie-Breaker Index and Non-Lottery Index
+	quietly{	
+		levelsof DefaultTiebreakerIndex, local(defaultlist)
+		foreach default of local defaultlist {
+			
+			levelsof NonLottery if DefaultTiebreakerIndex == `default', local(non)
+			local numnon : word count `non'
+			if `numnon' > 1 {
+				di as error "Inconsistent $user_NonLottery detected for $user_DefaultTiebreakerIndex `default'"
+			}
+		}
+	}
 end
 
 *=============================================================================

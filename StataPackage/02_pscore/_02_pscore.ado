@@ -10,8 +10,14 @@ program define _02_pscore
 	}
 	else {
 		tokenize "`anything'"
-		local bw_type `1'
-		local bw_n `2'
+		if "`2'" == ""{
+			local bw_type `1'
+			local bw_n 5
+		}
+		else {
+			local bw_type `1'
+			local bw_n `2'
+		}
 	}
 	
 	* Download a package for CCFT bandwith calculation
@@ -44,6 +50,57 @@ program define _02_pscore
 	* 2. Generate applicant position
 	gen Position = Priority + EffectiveTiebreaker
 	order Position, after(EffectiveTiebreaker)
+	
+*===============================================================================
+	
+	// Generate indicator for missing ranks
+	gen Position_orig = Position
+	gen indi_missing_rank_mod = (Position == . & NonLottery == 1)
+
+	// Replace missing RVs with max x 1000
+	sum Position
+	replace Position = r(max) * 1000 if indi_missing_rank_mod == 1
+	scalar scalar_missing_rank_mod = r(max) * 1000
+
+	// Re-rank for optional robustness check (no gaps in running variables)
+	preserve
+	// We drop duplicates in RVs, so that we can keep the cases where there is mass at the cutoff
+	keep SchoolID  Priority Position
+
+	duplicates drop
+
+	// sorting as we would do to simulate DA
+	sort SchoolID  Priority Position
+
+	// preserve this ranking and generate one variable that preserve the ordering
+	by SchoolID  Priority: gen reranked = _n
+	tempfile reranked
+	sa `reranked'
+	restore
+
+	merge m:1 SchoolID Priority Position using `reranked', nogen
+	sort SchoolID  Priority Position
+
+	replace Position = reranked
+
+	// Rescaling running variables to (0,1], as described in the paper
+	// Notice that we do that within the marginal group only
+	egen runvar_max =  max(Position) if NonLottery == 1 & Marginal == 1 & indi_missing_rank_mod == 0
+	egen runvar_min =  min(Position) if NonLottery == 1 & Marginal == 1 & indi_missing_rank_mod == 0
+
+	gen rank_mod_no_rescale = Position
+
+	replace Position = (rank_mod_no_rescale - runvar_min + 1) / (runvar_max -  runvar_min + 1) if (runvar_max -  runvar_min != 0)
+
+	replace Position = 1 if (runvar_max -  runvar_min == 0)
+
+	replace Position = 99 if indi_missing_rank_mod == 1
+
+	// Assert re-scaling was successful
+	summarize Position if indi_missing_rank_mod == 0
+	assert `r(max)' <= 1 & `r(min)' > 0
+	
+*===============================================================================
 
 	* 3. Set cutoff as the last *marginal* student who gets an offer
 	bys SchoolID: egen double Cutoff  = max(Assignment * Marginal * Position)
@@ -51,7 +108,7 @@ program define _02_pscore
 	* 4. Calculate tie-breaker cutoff
 	gen TieCutoff = Cutoff - MarginalPriority
 	
-	*======================================= 5. Calculate bandwidth ====================================================================================
+*======================================= 5. Calculate bandwidth ====================================================================================
 	
 	// Generate indicator variables for programs using rank variable to break ties
 	egen NonLotteryID = group(SchoolID) if NonLottery == 1
@@ -63,9 +120,6 @@ program define _02_pscore
 	bys SchoolID: egen FullyRanked = max(Marginal * (Centered > 0 ) * NonLottery)
 	la var FullyRanked "Flag if non-lottery program had marginal students with Centered > 0 i.e. students ranked above the cutoff"
 	
-	// Run this program only once and use output for the other outcomes and merge back in
-	
-	************* Integrate _02_bw *****************
 	* Keep only marginal students for the bandwidths
 	preserve
 	keep if Marginal == 1
@@ -125,11 +179,12 @@ program define _02_pscore
 	isid SchoolID
 
 	* Save
-	save "/Users/inkoo/Desktop/Spring 23/Atila/code/Stata/`bw_type'_bw.dta", replace
+	tempfile temp_bw
+	save `temp_bw'
 	restore
 	
 	* Merge bw back in
-	merge m:1 SchoolID using "/Users/inkoo/Desktop/Spring 23/Atila/code/Stata/`bw_type'_bw.dta", assert(1 3) nogen
+	merge m:1 SchoolID using `temp_bw', assert(1 3) nogen
 	
 	* Implement selected bandwidth
 	gen bw = `bw_type'_bw
@@ -187,8 +242,7 @@ program define _02_pscore
 
 	// Drop indicators
 	drop max_no_in_bw_above max_no_in_bw_below no_in_bw_below no_in_bw_above
-end
-/*	
+	
 	*** Truncate the bandwidth when it is much larger on one side than the other (because it is close to the top or bottom of the priority)
 
 	* First, generate minimum and maximum value (in absolute value) of rank in the bandwidth
@@ -203,10 +257,10 @@ end
 	by SchoolID : egen bw_mod = min(bw_mod_temp)
 
 	* Summary stats of the scale of the difference between the two bandwidths
-	/*egen tag = tag(prog_id_augmented)
+	egen tag = tag(SchoolID)
 	count if bw != bw_mod
 	gen diff_bw = bw - bw_mod
-	su diff_bw if tag == 1 */
+	summarize diff_bw if tag == 1
 
 	* Replace bandwidth with the smallest side of the bandwidth
 	assert !mi(bw_mod) if !mi(bw)
@@ -225,7 +279,7 @@ end
 	gen below_bw =  (Centered <= -bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
 	
 	// Generate indicator for being above the bandwidth
-	gen above_bw =  (Centered > -bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
+	gen above_bw =  (Centered > bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
 
 	// check
 	egen check = rowtotal(in_bw below_bw above_bw) if (Marginal == 1) & (NonLottery == 1) & !missing(bw)
@@ -239,18 +293,20 @@ end
 	// Save an intermediary file before creating the relevant indicators
 	save "intermediary_`bw_type'.dta", replace
 
-*** Generate variables for robustness checks
+end
+/*	
+	*** Generate variables for robustness checks
 	// Duplicates, gaps and number of applicants in BW
 
 * 	1. Computing duplicates
-	duplicates tag prog_id_aug global_priority rank_mod, gen(rvtag_duplicats)
+	duplicates tag SchoolID Priority Position, gen(rvtag_duplicats)
 
 *	2. Compute threshold for gaps in running variable
 	// Sort
-	sort prog_id_aug global_priority rank_mod_orig
+	sort SchoolID Priority Position_orig
 	// Generate variable for number of steps from last rank
-	by prog_id_aug global_priority: gen delta_rv_marg_in_bw = rank_mod_orig[_n] - rank_mod_orig[_n-1] ///
-		if lottery_flag_mod == 0  & marginal == 1 & in_bw == 1
+	by prog_id_aug global_priority: gen delta_rv_marg_in_bw = Position_orig[_n] - Position_orig[_n-1] ///
+		if NonLottery == 1  & Marginal == 1 & in_bw == 1
 
 	local modification_str
 	if "`dup_threshold'" != "" {
@@ -320,8 +376,7 @@ local modification_vars
 
 	// Re-tag if the program has a bandwidth (tags which programs are screened)
 	replace has_bw = bw != .
-}
-		
+}	
 	*==========================================================================================================================================================================
 		
 	* 6. Calculate T
