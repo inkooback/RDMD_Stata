@@ -1,7 +1,7 @@
 *!version 9.1.0  10-28-2022
 
-capture program drop _02_ccft_2022
-program define _02_ccft_2022, eclass
+capture program drop _02_rdbwselect
+program define _02_rdbwselect, eclass
 
 	syntax anything [if] [in] [, c(real 0) fuzzy(string) deriv(real 0) p(string) q(real 0) covs(string) covs_drop(string) kernel(string) weights(string) bwselect(string) vce(string) scaleregul(real 1) all nochecks masspoints(string) bwcheck(real 0) bwrestrict(string) stdvars(string)]
 

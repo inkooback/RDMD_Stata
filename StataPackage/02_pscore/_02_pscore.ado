@@ -2,11 +2,20 @@ capture program drop _02_pscore
 program define _02_pscore
     version 15.0
     
-    syntax anything [if]
+    syntax [anything] [if]
 	
-	tokenize "`anything'"
-	local bw_type `1'
-	local bw_n `2'
+	if "`anything'" == ""{
+		local bw_type "ik"
+		local bw_n 5
+	}
+	else {
+		tokenize "`anything'"
+		local bw_type `1'
+		local bw_n `2'
+	}
+	
+	* Download a package for CCFT bandwith calculation
+	net install rdrobust, from(https://raw.githubusercontent.com/rdpackages/rdrobust/master/stata) replace
 	
 	* pick one year and grade
 	keep if (Year == 2017) & (Grade == 1)
@@ -42,7 +51,7 @@ program define _02_pscore
 	* 4. Calculate tie-breaker cutoff
 	gen TieCutoff = Cutoff - MarginalPriority
 	
-	*======================================= 5. Calculate bandwidth ==========================================
+	*======================================= 5. Calculate bandwidth ====================================================================================
 	
 	// Generate indicator variables for programs using rank variable to break ties
 	egen NonLotteryID = group(SchoolID) if NonLottery == 1
@@ -85,13 +94,13 @@ program define _02_pscore
 
 			* IK
 			if "`bw_type'" == "ik" {
-			noi cap: _02_ik `test' Centered if (NonLotteryID == `i') & (FullyRanked == 1) & (Marginal == 1), ck(5.40)
+			noi cap: _02_rdob_mod2 `test' Centered if (NonLotteryID == `i') & (FullyRanked == 1) & (Marginal == 1), ck(5.40)
 			if _rc == 0 replace ik_`test' = `r(h_opt)' if NonLotteryID == `i'
 			}
 			
 			* CCFT
 			else if "`bw_type'" == "ccft" {
-			noi cap: _02_ccft `test' Centered if (NonLotteryID == `i') & (FullyRanked == 1) & (Marginal == 1), kernel(uniform) c(0)
+			noi cap: _02_rdbwselect `test' Centered if (NonLotteryID == `i') & (FullyRanked == 1) & (Marginal == 1), kernel(uniform) c(0)
 			if _rc == 0 replace ccft_`test' = `e(h_mserd)' if NonLotteryID == `i'
 			}
 			
@@ -127,8 +136,6 @@ program define _02_pscore
 
 	// Set bw to missing if lottery school
 	replace bw = . if NonLottery == 0
-	
-	*========================= copy =========================
 	
 	* Generate indicators for applicants in/above/below the bandwidth
 	/*	Note that we do this twice due to the fact that we limit risk to programs where at least 5 applicants are on either side of the cutoff within the bandwidth.
@@ -315,8 +322,8 @@ local modification_vars
 	replace has_bw = bw != .
 }
 		
-	*========================= copy =========================
-	
+	*==========================================================================================================================================================================
+		
 	* 6. Calculate T
 	
 	* 7. Calculate MID

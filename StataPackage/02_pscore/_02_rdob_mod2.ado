@@ -1,11 +1,9 @@
-/****Bandwidth ****/
-
 /* This program implements the IK(RESTUD 2011) algorithm for the optimal bandwidth for sharp and fuzzy RD */
 /* The program also computes the bandwidth used by DesJardins and McCall (2008) */
 
-capture program drop _02_ik
+capture program drop _02_rdob_mod2
 
-program define _02_ik, rclass
+program define _02_rdob_mod2, rclass
 	version 16.1
 	syntax anything [if] [in] [, c(real 0) ibw(real 0) fuzzy(varname) dm(real 0) ck(real 3.4375 )]
 
@@ -36,7 +34,6 @@ program define _02_ik, rclass
 	gen `x2' = (`x' - `c')^2
 	gen `x3' = (`x' - `c')^3
 	gen `dx1' = `d'*`x1'
-
 
 	/* Step 1: Estimation of density and variances */
 
