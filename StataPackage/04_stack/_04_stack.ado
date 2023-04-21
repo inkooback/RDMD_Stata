@@ -21,6 +21,8 @@ program define _04_stack
 				save "seed_for_append.dta", replace
 			}
 		}
+		
+		drop in 1
 		drop seed_for_append
 		save "stacked.dta", replace
 	}

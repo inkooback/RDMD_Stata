@@ -11,6 +11,11 @@ program define _03_create
 	
 	tabulate Treatment, gen(treatment)
 	
+	// Transfrom categorical covariates into dummies
+			foreach cat of varlist Covariate_cat* {
+				tabulate `cat', gen("`cat'_")
+			}
+	
 	// generate D_i and C_i
 	foreach t of varlist treatment*{
 		gen Assign_`t' = Assignment * `t'
@@ -28,3 +33,4 @@ program define _03_create
 	restore
 
 end
+
