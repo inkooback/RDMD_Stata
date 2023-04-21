@@ -2,11 +2,11 @@ capture program drop _02_pscore
 program define _02_pscore
     version 15.0
     
-    syntax year grade [anything] [if]
+    syntax [anything] [if]
 	
 	// take bw_type and bw_n as arguments. set defaults.
 	if "`anything'" == ""{
-		local bw_type "ik"
+		local bw_type "IK"
 		local bw_n 5
 	}
 	else {
@@ -21,11 +21,11 @@ program define _02_pscore
 		}
 	}
 	
+	local year = $Year
+	local grade = $Grade
+	
 	* Download a package for CCFT bandwith calculation
 	net install rdrobust, from(https://raw.githubusercontent.com/rdpackages/rdrobust/master/stata) replace
-	
-	* pick one year and grade
-	keep if (Year == `year') & (Grade == `grade')
 	
 	* 0. count number of unique types
 	egen type = concat(SchoolID Priority), punct(", ")
@@ -73,7 +73,7 @@ program define _02_pscore
 	// preserve this ranking and generate one variable that preserve the ordering
 	by SchoolID Priority: gen reranked = _n
 	tempfile reranked
-	sa `reranked'
+	save `reranked'
 	restore
 
 	merge m:1 SchoolID Priority rank using `reranked', nogen
@@ -100,7 +100,7 @@ program define _02_pscore
 	
 	* 2. Set cutoff as the last *marginal* student who gets an offer
 	bys SchoolID: egen double Cutoff  = max(Assignment * Marginal * rank)
-	gen double DefaultCutoff  = Cutoff / (1 - Advantage)
+	gen double DefaultCutoff  = min(1, Cutoff / (1 - Advantage))
 	
 *======================================= 3. Calculate bandwidth ====================================================================================
 	
@@ -141,20 +141,20 @@ program define _02_pscore
 			* Create bandwidth for applicants who are applying to a non-lottery program that is fully ranked and only look at the marginal applicants.
 
 			* IK
-			if "`bw_type'" == "ik" {
+			if "`bw_type'" == "IK" {
 			noi cap: _02_rdob_mod2 `test' Centered if (NonLotteryID == `i') & (FullyRanked == 1) & (Marginal == 1), ck(5.40)
-			if _rc == 0 replace ik_`test' = `r(h_opt)' if NonLotteryID == `i'
+			if _rc == 0 replace IK_`test' = `r(h_opt)' if NonLotteryID == `i'
 			}
 			
 			* CCFT
-			else if "`bw_type'" == "ccft" {
+			else if "`bw_type'" == "CCFT" {
 			noi cap: _02_rdbwselect `test' Centered if (NonLotteryID == `i') & (FullyRanked == 1) & (Marginal == 1), kernel(uniform) c(0)
-			if _rc == 0 replace ccft_`test' = `e(h_mserd)' if NonLotteryID == `i'
+			if _rc == 0 replace CCFT_`test' = `e(h_mserd)' if NonLotteryID == `i'
 			}
 			
 			* Catch incorrect
 			else {
-				di "Incorrect bandwidth option (must be ik or ccft)"
+				di "Incorrect bandwidth option (must be IK or CCFT)"
 				stop
 			}
 		}
@@ -463,9 +463,6 @@ program define _02_pscore
 			count if pscore == .
 			assert `r(N)' ==  0
 
-		// Label this pscore_formula
-		ren pscore pscore_formula
-
 		// Compute frequency score
 		bys SchoolID mid t_a t_c t_n : egen double pscore_frequency = mean(Assignment)
 
@@ -475,7 +472,7 @@ program define _02_pscore
 		drop frequency_offer_intermediate
 
 		// Generate indicator for offer if pscore was 0
-		bys StudentID : egen ever_0_got_offer = max(Assignment == 1 & pscore_formula_bw == 0)
+		bys StudentID : egen ever_0_got_offer = max(Assignment == 1 & pscore == 0)
 		compress
 
 		// Save
@@ -484,55 +481,55 @@ program define _02_pscore
 *=============================================================================
 
 	* 7. Create running variable control
-	
-	* Settings
-	set trace off
-	set tracedepth 1
+	preserve
+		* Settings
+		set trace off
+		set tracedepth 1
 
-	use "pscore.dta", clear
+		use "pscore_`year'_`grade'.dta", clear
 
-	* Only compute for programs that have a bandwidth
-	keep if has_bw == 1
+		* Only compute for programs that have a bandwidth
+		keep if has_bw == 1
 
-	/*
-	The RV controls are going to be
-	1- applying to the program
-	2- being in the bandwidth
-	3- the RV in the bandwidth
-	4- the RV in the bandwidth + being above the cutoff
-	*/
+		/*
+		The RV controls are going to be
+		1- applying to the program
+		2- being in the bandwidth
+		3- the RV in the bandwidth
+		4- the RV in the bandwidth + being above the cutoff
+		*/
 
-	// RV Control 1
-	gen byte rv_app_  = 1
+		// RV Control 1
+		gen byte rv_app_  = 1
 
-	// RV Control 2
-	gen byte rv_in_bw_ = (t_c == 1) & (rv_app_ == 1)
+		// RV Control 2
+		gen byte rv_in_bw_ = (t_c == 1) & (rv_app_ == 1)
 
-	// RV Control 3
-	gen rv_ =  Centered * rv_in_bw_
+		// RV Control 3
+		gen rv_ =  Centered * rv_in_bw_
 
-	// RV Control 4
-	gen rv_above_ =   ( rv_ > 0 ) * Centered * rv_in_bw_
+		// RV Control 4
+		gen rv_above_ = (rv_ > 0) * Centered * rv_in_bw_
 
-	// Alternative versions of RV controls
+		// Alternative versions of RV controls
 
-	// Square the running variable
-	gen quad_ =  Centered^2 * rv_in_bw_
-	gen quad_above_ =  (rv_ > 0) * Centered^2 * rv_in_bw_
+		// Square the running variable
+		gen quad_ =  Centered^2 * rv_in_bw_
+		gen quad_above_ =  (rv_ > 0) * Centered^2 * rv_in_bw_
 
-	// Keep relevant variables
-	keep StudentID rv_* SchoolID quad_*
+		// Keep relevant variables
+		keep StudentID rv_* SchoolID quad_*
 
-	// Reshape to make unique by applicants
-	reshape wide rv_in_bw_ rv_ rv_above_ rv_app_ quad_ quad_above_, i(StudentID) j(SchoolID) string
+		// Reshape to make unique by applicants
+		reshape wide rv_in_bw_ rv_ rv_above_ rv_app_ quad_ quad_above_, i(StudentID) j(SchoolID)
+		
+		keep StudentID rv_* quad_*
+		duplicates drop
+		isid StudentID
 
-	keep StudentID rv_* quad_*
-	duplicates drop
-	isid StudentID
-
-	compress
-	sa "runvar_control_`year'_`grade'.dta", replace
-
+		compress
+		save "runvar_control_`year'_`grade'.dta", replace
+	restore
 end
 
 
