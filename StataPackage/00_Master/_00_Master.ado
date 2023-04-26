@@ -6,6 +6,13 @@ program define _00_Master
 	
 	noisily{
 		
+		* Install commands
+		ssc inst unique
+		ssc install ranktest 
+		ssc inst ivreg2
+		
+		* Download a package for CCFT bandwith calculation
+		net install rdrobust, from(https://raw.githubusercontent.com/rdpackages/rdrobust/master/stata) replace
 		
 		* 1.1. rename variables
 		dis "Input your variable name for Student ID" _request(id)
@@ -186,8 +193,7 @@ program define _00_Master
 			}
 		}
 		_04_stack
-		
-		dis "If you have non-binary treatment, indicate which one you want to use for this analysis" _request(criterion)
+
 		* _05_analysis
 	}
 end
