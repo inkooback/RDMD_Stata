@@ -7,15 +7,17 @@ program define _03_create
 	local year = $Year
 	local grade = $Grade
 	
-	use "pscore_`year'_`grade'.dta", clear
-	
+	// Treatment into dummies
 	tabulate Treatment, gen(treatment)
 	
 	// Transfrom categorical covariates into dummies
 			foreach cat of varlist Covariate_cat* {
-				tabulate `cat', gen("`cat'_")
-			}
-	
+				levelsof `cat', local(catset)
+				foreach c of local catset {
+					gen `cat'_`c' = `c'.`cat'
+					}
+				}
+			
 	// generate D_i and C_i
 	foreach t of varlist treatment*{
 		gen Assign_`t' = Assignment * `t'
@@ -24,13 +26,14 @@ program define _03_create
  	}
 	
 	preserve
-		// Analysis of Treatment1
-		collapse (sum) Assign_treatment1 Enroll_treatment1 pscore_treatment1 (mean) Year Grade Outcome* Covariate*, by(StudentID)
+		collapse (sum) Assign_treatment* Enroll_treatment* pscore_treatment* treatment* (mean) Year Grade Outcome* Covariate*, by(StudentID)
 		
 		merge 1:1 StudentID using "runvar_control_`year'_`grade'.dta", nogen
 		
-		save "variable_`year'_`grade'.dta", replace
+		save "variable_`year'_`grade'.dta"
 	restore
+	
+	erase "runvar_control_`year'_`grade'.dta"
 
 end
 

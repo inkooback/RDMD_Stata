@@ -53,32 +53,20 @@ program define _05_analysis
 	
 	* 1. Set pscores
 	
-		// 1.1 Provide information about pscore round options
+		// 1.1 Provide information about the number of unique values of pscore and types
 		foreach t of varlist treatment* {
-			
 			unique pscore_`t'
 			dis "Propensity scores for `t' have `r(sum)' unique values."
-			
-			gen pscore_`t'_01 = round(pscore_`t', 0.01)
-			unique pscore_`t'_01
-			dis "When rounded to hundredths, Propensity scores for `t' have `r(sum)' unique values."
-			
-			gen pscore_`t'_001 = round(pscore_`t', 0.001)
-			unique pscore_`t'_001
-			dis "When rounded to thousandths, Propensity scores for `t' have `r(sum)' unique values."
-			
-			dis "Applicants in your data have $num_type types."
 		}
+		dis "Applicants in your data have $num_type types."
 		
-		// 1.2 Receive user's choice
-		
-		// 1.3 Set pscores - make dummies for each treatment
+		// 1.2 Set pscores - make dummies for each treatment
 		foreach t of varlist treatment* {
 			egen int pindex_`t' = group(pscore_`t')
 			local pdummy_`t' i.pindex_`t'
 		}
 			
-		// 1.4 Tag "good cells" (not 0 or 1)
+		// 1.3 Tag "good cells" (not 0 or 1 --> 1)
 		foreach t of varlist treatment* {
 			gen good_`t' = !inlist(pscore_`t', 1, 0)
 		}
@@ -132,24 +120,17 @@ program define _05_analysis
 			}
 		}
 	
+	// save an intermediate file
+	erase "stacked.dta"
+	save "pscore_results.dta", replace
+	
+	use "pscore_results.dta", clear
+	
 	* 3. Run 2SLS regression
 	
-	/*
-	// Ask user
-	dis "Type 1 if you want to limit the sample to applicants with risk at at least 1 sector. Type 2 if you want to limit the sample to applicants with risk at all sectors. Default: " _request(choice)
-	
-	// Keep students at risk
-	if $choice == 1{
-		preserve
-			keep 
-		restore
-	}
-	else {
-		preserve
-			keep 
-		restore
-	}
-	*/
+	// limit the sample to applicants with risk at at least 1 sector. 
+		egen risk = rowtotal(good_*)
+		keep if (risk > 0)
 	
 	// 3.1 Multi-sector analysis
 	
@@ -168,29 +149,41 @@ program define _05_analysis
 			local pdummy_multi `pdummy_multi' `pdummy_`t''
 		}
 		
+		// rename back
+		rename Outcome_cat* $user_Outcome_cat
+		rename Outcome_con* $user_Outcome_con
+		rename Enroll_* $user_Enrollment*
+		
+		local user_outcomes $user_Outcome_cat $user_Outcome_con
+		local user_enrolls $user_Enrollment*
+		
 		// Analysis
 		
-		foreach out of varlist Outcome* {
-			ivreg2 `out' (`enrolls' = `assigns') `pdummy_multi' `controls', robust partial(`pdummy_multi' `controls')
-			estimates store reg_`out'
+		foreach out of varlist `user_outcomes' {
+			ivreg2 `out' (`user_enrolls' = `assigns') `pdummy_multi' `controls', robust partial(`pdummy_multi' `controls')
+			estimates store `out'
 		}
 		
 		// Output tables
-		esttab reg_Outcome* using RA_2.tex, label replace booktabs /*
-		*/   title(OAI\label{tab1}) stats(r2 N) style(fixed) cells(b(star) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01)
 		
+		esttab `user_outcomes' using multi.tex, replace booktabs /*
+		*/ title(2SLS\label{tab1}) stats(r2 N) style(fixed) cells(b(star) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01) nodepvars
+		
+		/*
 		print_results  `endogvar' , model_names( `estimatesstring' ) hidevars_print( 0 ) outfile("`outfile'") ///
 		stat_names( "obs `nonoffered_means' ") stat_labs( `"observations"' `nonoffered_means' )
 
-	
 	// 3.2 Individual analysis
 		foreach t of varlist treatment* {
 			foreach out of varlist Outcome* {
 				ivreg2 `out' (Enroll_treatment1 = Assign_`t') `pdummy_`t'' `controls', robust  partial(`pdummy_`t'' `controls')
 				}
 			}
-		
-		
+		*/
+	// rename back to user's variable names
+	rename (StudentID Assign_treatment* Enroll_treatment* Year Grade) ($user_StudentID $user_Assignment* $user_Enrollment* $user_Year $user_Grade)
+	rename Covariate_cat* $user_Covariate_cat
+	rename Covariate_con* $user_Covariate_con
 	
 end
 

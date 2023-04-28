@@ -7,7 +7,8 @@ program define _04_stack
 	clear
 	set obs 1
 	gen seed_for_append = .
-	save "seed_for_append.dta", replace
+	tempfile seed_for_append
+	save `seed_for_append'
 	
 	quietly{
 		use "step1_finished.dta", clear
@@ -17,15 +18,18 @@ program define _04_stack
 			levelsof Grade, local(gradelist)
 			foreach grade of local gradelist {
 				clear
-				append using "seed_for_append.dta" "variable_`year'_`grade'.dta"
-				save "seed_for_append.dta", replace
+				append using `seed_for_append' "variable_`year'_`grade'.dta"
+				save `seed_for_append', replace
+				erase "variable_`year'_`grade'.dta"
 			}
 		}
 		
 		drop in 1
 		drop seed_for_append
+		
 		save "stacked.dta", replace
 	}
+	erase "step1_finished.dta"
 end
 
 
