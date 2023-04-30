@@ -7,7 +7,7 @@ program define _01_check
 	* 00 sort by ChoiceRank within each student
 	sort StudentID ChoiceRank
 	
-	* 01 Inconsistency within a student (grade, outcomes, and tie-breaker)
+	* 01 Inconsistency within a student (grade, tie-breaker, covariate, and outcome)
 	quietly{	
 		levelsof StudentID, local(studentlist)
 		foreach student of local studentlist {
@@ -19,15 +19,6 @@ program define _01_check
 				di as error "Inconsistent $user_Grade detected for $user_StudentID `student'"
 			}
 			
-			* outcomes
-			foreach outcome of varlist Outcome* {
-				levelsof `outcome' if StudentID == `student', local(set_outcome)
-				local num : word count `set_outcome'
-				if `num' > 1 {
-					di as error "Inconsistent `outcome' detected for $user_StudentID `student'"
-				}
-			}
-			
 			* default tie-breaker index
 			levelsof DefaultTiebreakerIndex, local(defaultlist)
 			foreach default of local defaultlist {
@@ -36,6 +27,50 @@ program define _01_check
 				if `numbreakers' > 1 {
 					di as error "Inconsistent $user_DefaultTiebreaker detected for $user_StudentID `student' and $user_DefaultTieBreaker `default'"
 				}
+			}
+			
+			* covariates (categorical)
+			local i = 1
+			foreach covariate of varlist Covariate_cat* {
+				levelsof `covariate' if StudentID == `student', local(set_covariate)
+				local num : word count `set_covariate'
+				if `num' > 1 {
+					di as error "Inconsistent $user_Covariate_cat`i' detected for $user_StudentID `student'"
+				}
+				local i = `i' + 1
+			}
+			
+			* covariates (continuous)
+			local i = 1
+			foreach covariate of varlist Covariate_con* {
+				levelsof `covariate' if StudentID == `student', local(set_covariate)
+				local num : word count `set_covariate'
+				if `num' > 1 {
+					di as error "Inconsistent $user_Covariate_con`i' detected for $user_StudentID `student'"
+				}
+				local i = `i' + 1
+			}
+			
+			* outcomes (categorical)
+			local i = 1
+			foreach outcome of varlist Outcome_cat* {
+				levelsof `outcome' if StudentID == `student', local(set_outcome)
+				local num : word count `set_outcome'
+				if `num' > 1 {
+					di as error "Inconsistent $user_Outcome_cat`i' detected for $user_StudentID `student'"
+				}
+				local i = `i' + 1
+			}
+			
+			* outcomes (continuous)
+			local i = 1
+			foreach outcome of varlist Outcome_con* {
+				levelsof `outcome' if StudentID == `student', local(set_outcome)
+				local num : word count `set_outcome'
+				if `num' > 1 {
+					di as error "Inconsistent $user_Outcome_con`i' detected for $user_StudentID `student'"
+				}
+				local i = `i' + 1
 			}
 		}
 	}
