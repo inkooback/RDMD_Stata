@@ -57,137 +57,150 @@ program define _01_receive
 			dis "Input a list (parsed by space) of your variable names for categorical covariates in your dataset" _request(cov_cat_list)
 			
 			// count the number of 
-			local length : word count $cov_cat_list
+			global cov_cat_length : word count $cov_cat_list
 			qui ds
 			
-			// throw warning if the inpud is not in the varlist
-			forvalues i = 1 / `length'{
-				local cov: word `i' of $cov_cat_list
-				if strpos(r(varlist), "`cov'") == 0{
-					while strpos(r(varlist), "`cov'") == 0 {
-						di as error "variable `cov' not found"
-						dis "Input a list (parsed by space) of your variable names for categorical covariates in your dataset" _request(cov_cat_list)
-						local cov: word `i' of $cov_cat_list
+			if $cov_cat_length > 0{
+				
+				// throw warning if the inpud is not in the varlist
+				forvalues i = 1 / $cov_cat_length{
+					local cov: word `i' of $cov_cat_list
+					if strpos(r(varlist), "`cov'") == 0{
+						while strpos(r(varlist), "`cov'") == 0 {
+							di as error "variable `cov' not found"
+							dis "Input a list (parsed by space) of your variable names for categorical covariates in your dataset" _request(cov_cat_list)
+							local cov: word `i' of $cov_cat_list
 						}
 					}
 				}
 				
-			// check once again
-			forvalues i = 1 / `length'{
-				local cov: word `i' of $cov_cat_list
-				if strpos(r(varlist), "`cov'") == 0{
-					while strpos(r(varlist), "`cov'") == 0 {
-						di as error "variable `cov' not found"
-						dis "Input a list (parsed by space) of your variable names for categorical covariates in your dataset" _request(cov_cat_list)
-						local cov: word `i' of $cov_cat_list
+				// check once again
+				forvalues i = 1 / $cov_cat_length{
+					local cov: word `i' of $cov_cat_list
+					if strpos(r(varlist), "`cov'") == 0{
+						while strpos(r(varlist), "`cov'") == 0 {
+							di as error "variable `cov' not found"
+							dis "Input a list (parsed by space) of your variable names for categorical covariates in your dataset" _request(cov_cat_list)
+							local cov: word `i' of $cov_cat_list
+							}
 						}
 					}
-				}
-			
-			// pass the variable names to _01_covariate_cat as a varlist
-			_01_covariate_cat $cov_cat_list
+				
+				// pass the variable names to _01_covariate_cat as a varlist
+				_01_covariate_cat $cov_cat_list
+			}
 			
 			// 2) countinuous
 			dis "Input a list (parsed by space) of your variable names for the rest (continuous) covariates in your dataset" _request(cov_con_list)
 			
 			// count the number of 
-			local length : word count $cov_con_list
+			global cov_con_length : word count $cov_con_list
 			qui ds
-			// throw warning if the inpud is not in the varlist
-			forvalues i = 1 / `length'{
-				local cov: word `i' of $cov_con_list
-				if strpos(r(varlist), "`cov'") == 0{
-					while strpos(r(varlist), "`cov'") == 0 {
-						di as error "varaible `cov' not found"
-						dis "Input a list (parsed by space) of your variable names for the rest (continuous) covariates in your dataset" _request(cov_con_list)
-						local cov: word `i' of $cov_con_list
-						}
-					}
-				}
-				
-			// check once again
-			forvalues i = 1 / `length'{
-				local cov: word `i' of $cov_con_list
-				if strpos(r(varlist), "`cov'") == 0{
-					while strpos(r(varlist), "`cov'") == 0 {
-						di as error "variable `cov' not found"
-						dis "Input a list (parsed by space) of your variable names for the rest (continuous) covariates in your dataset" _request(cov_con_list)
-						local cov: word `i' of $cov_con_list
-						}
-					}
-				}
 			
-			// pass the variable names to _01_covariate_con as a varlist
-			_01_covariate_con $cov_con_list
+			if $cov_con_length > 0{
+				
+				// throw warning if the inpud is not in the varlist
+				forvalues i = 1 / $cov_con_length{
+					local cov: word `i' of $cov_con_list
+					if strpos(r(varlist), "`cov'") == 0{
+						while strpos(r(varlist), "`cov'") == 0 {
+							di as error "varaible `cov' not found"
+							dis "Input a list (parsed by space) of your variable names for the rest (continuous) covariates in your dataset" _request(cov_con_list)
+							local cov: word `i' of $cov_con_list
+							}
+						}
+					}
+					
+				// check once again
+				forvalues i = 1 / $cov_con_length{
+					local cov: word `i' of $cov_con_list
+					if strpos(r(varlist), "`cov'") == 0{
+						while strpos(r(varlist), "`cov'") == 0 {
+							di as error "variable `cov' not found"
+							dis "Input a list (parsed by space) of your variable names for the rest (continuous) covariates in your dataset" _request(cov_con_list)
+							local cov: word `i' of $cov_con_list
+							}
+						}
+					}
+				
+				// pass the variable names to _01_covariate_con as a varlist
+				_01_covariate_con $cov_con_list
+			}
+			
 		
 	* 1.3. rename outcomes
 			// 1) categorical
 			dis "Input a list (parsed by space) of your variable names for categorical outcome variables in your dataset." _request(out_cat_list)
 			
 			// count the number of 
-			local length : word count $out_cat_list
+			global out_cat_length : word count $out_cat_list
 			qui ds
 			
-			// throw warning if the inpud is not in the varlist
-			forvalues i = 1 / `length'{
-				local out: word `i' of $out_cat_list
-				if strpos(r(varlist), "`out'") == 0{
-					while strpos(r(varlist), "`out'") == 0 {
-						di as error "variable `out' not found"
-						dis "Input a list (parsed by space) of your variable names for categorical outcome variables in your dataset" _request(out_cat_list)
-						local out: word `i' of $out_cat_list
-						}
-					}
-				}
+			if $out_cat_length > 0 {
 				
-			// check once again
-			forvalues i = 1 / `length'{
-				local out: word `i' of $out_cat_list
-				if strpos(r(varlist), "`out'") == 0{
-					while strpos(r(varlist), "`out'") == 0 {
-						di as error "variable `out' not found"
-						dis "Input a list (parsed by space) of your variable names for categorical outcome variables in your dataset" _request(out_cat_list)
-						local out: word `i' of $out_cat_list
+				// throw warning if the inpud is not in the varlist
+				forvalues i = 1 / $out_cat_length{
+					local out: word `i' of $out_cat_list
+					if strpos(r(varlist), "`out'") == 0{
+						while strpos(r(varlist), "`out'") == 0 {
+							di as error "variable `out' not found"
+							dis "Input a list (parsed by space) of your variable names for categorical outcome variables in your dataset" _request(out_cat_list)
+							local out: word `i' of $out_cat_list
+							}
 						}
 					}
-				}
-			
-			// pass the variable names to _01_outcome_cat as a varlist
-			_01_outcome_cat $out_cat_list
+					
+				// check once again
+				forvalues i = 1 / $out_cat_length{
+					local out: word `i' of $out_cat_list
+					if strpos(r(varlist), "`out'") == 0{
+						while strpos(r(varlist), "`out'") == 0 {
+							di as error "variable `out' not found"
+							dis "Input a list (parsed by space) of your variable names for categorical outcome variables in your dataset" _request(out_cat_list)
+							local out: word `i' of $out_cat_list
+							}
+						}
+					}
+				
+				// pass the variable names to _01_outcome_cat as a varlist
+				_01_outcome_cat $out_cat_list
+			}
 			
 			// 2) countinuous
 			dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset" _request(out_con_list)
 			
 			// count the number of 
-			local length : word count $out_con_list
+			global out_con_length : word count $out_con_list
 			qui ds
 			
-			// throw warning if the inpud is not in the varlist
-			forvalues i = 1 / `length'{
-				local out: word `i' of $out_con_list
-				if strpos(r(varlist), "`out'") == 0{
-					while strpos(r(varlist), "`out'") == 0 {
-						di as error "variable `out' not found"
-						dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset" _request(out_con_list)
-						local out: word `i' of $out_cat_list
+			if $out_con_length > 0 {
+				// throw warning if the inpud is not in the varlist
+				forvalues i = 1 / $out_con_length{
+					local out: word `i' of $out_con_list
+					if strpos(r(varlist), "`out'") == 0{
+						while strpos(r(varlist), "`out'") == 0 {
+							di as error "variable `out' not found"
+							dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset" _request(out_con_list)
+							local out: word `i' of $out_cat_list
+							}
 						}
 					}
-				}
+					
+				// check once again
+				forvalues i = 1 / $out_con_length{
+					local out: word `i' of $out_con_list
+					if strpos(r(varlist), "`out'") == 0{
+						while strpos(r(varlist), "`out'") == 0 {
+							di as error "variable `out' not found"
+							dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset" _request(out_con_list)
+							local out: word `i' of $out_con_list
+							}
+						}
+					}
 				
-			// check once again
-			forvalues i = 1 / `length'{
-				local out: word `i' of $out_con_list
-				if strpos(r(varlist), "`out'") == 0{
-					while strpos(r(varlist), "`out'") == 0 {
-						di as error "variable `out' not found"
-						dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset" _request(out_con_list)
-						local out: word `i' of $out_con_list
-						}
-					}
-				}
-			
-			// pass the variable names to _01_outcome_con as a varlist
-			_01_outcome_con $out_con_list 
+				// pass the variable names to _01_outcome_con as a varlist
+				_01_outcome_con $out_con_list 
+			}
 	}
 end
 

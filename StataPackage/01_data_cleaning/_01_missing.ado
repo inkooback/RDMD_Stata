@@ -1,3 +1,4 @@
+capture program drop _01_missing
 program define _01_missing
     version 15.0
     

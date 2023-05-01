@@ -1,3 +1,4 @@
+capture program drop _01_rename
 program define _01_rename
     version 15.0
     

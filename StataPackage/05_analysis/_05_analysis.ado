@@ -90,7 +90,7 @@ program define _05_analysis
 		if `r(sum)' > 1 {
 			
 			// covariates (categorical)
-			foreach cov of varlist Covariate_cat* {
+			foreach cov of varlist dum_Covariate_cat* {
 				local controls `controls' `cov'
 				}
 				
@@ -150,9 +150,16 @@ program define _05_analysis
 		}
 		
 		// rename back
-		rename Outcome_cat* $user_Outcome_cat
-		rename Outcome_con* $user_Outcome_con
-		rename Enroll_* $user_Enrollment*
+		
+		if $out_cat_length > 0 {
+			rename (Outcome_cat*) ($user_Outcome_cat)	
+		}
+		
+		if $out_con_length > 0{
+			rename (Outcome_con*) ($user_Outcome_con)
+		}
+		
+		rename (Enroll_*) ($user_Enrollment*)
 		
 		local user_outcomes $user_Outcome_cat $user_Outcome_con
 		local user_enrolls $user_Enrollment*
@@ -170,8 +177,6 @@ program define _05_analysis
 		*/ title(2SLS\label{tab1}) stats(r2 N) style(fixed) cells(b(star) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01) nodepvars
 		
 		/*
-		print_results  `endogvar' , model_names( `estimatesstring' ) hidevars_print( 0 ) outfile("`outfile'") ///
-		stat_names( "obs `nonoffered_means' ") stat_labs( `"observations"' `nonoffered_means' )
 
 	// 3.2 Individual analysis
 		foreach t of varlist treatment* {
@@ -181,9 +186,16 @@ program define _05_analysis
 			}
 		*/
 	// rename back to user's variable names
-	rename (StudentID Assign_treatment* Enroll_treatment* Year Grade) ($user_StudentID $user_Assignment* $user_Enrollment* $user_Year $user_Grade)
-	rename Covariate_cat* $user_Covariate_cat
-	rename Covariate_con* $user_Covariate_con
+	rename (StudentID Assign_treatment* Year Grade) ($user_StudentID $user_Assignment* $user_Year $user_Grade)
+	
+	if $cov_cat_length > 0{
+		rename (Covariate_cat*) ($user_Covariate_cat)
+	}
+	
+	if $cov_con_length > 0{
+		rename (Covariate_con*) ($user_Covariate_con)
+	}
+	
 	
 end
 

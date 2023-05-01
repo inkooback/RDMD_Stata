@@ -14,6 +14,36 @@ program define _00_Master
 		* Download a package for CCFT bandwith calculation
 		net install rdrobust, from(https://raw.githubusercontent.com/rdpackages/rdrobust/master/stata) replace
 		
+		* initialize global variables
+		global Year = ""
+		global Grade = ""
+		global cov_cat_length = ""
+		global cov_con_length = ""
+		global out_cat_length = ""
+		global out_con_length = ""
+		global user_variables = ""
+		global user_StudentID = ""
+		global user_Year = ""
+		global user_Grade = ""
+		global user_ChoiceRank = ""
+		global user_SchoolID = ""
+		global user_Treatment = ""
+		global user_Capacity = ""
+		global user_Priority = ""
+		global user_DefaultTiebreakerIndex = ""
+		global user_NonLottery = ""
+		global user_TiebreakerStudentGroupIndex = ""
+		global user_Advantage = ""
+		global user_DefaultTiebreaker = ""
+		global user_EffectiveTiebreaker = ""
+		global user_Assignment = ""
+		global user_Enrollment = ""
+		global user_Covariate_cat = ""
+		global user_Covariate_con = ""
+		global user_Outcome_cat = ""
+		global user_Outcome_con = ""
+		global num_type = ""
+			
 		* 1.1 receive the user's variable names and pass them to be renamed.
 		_01_receive
 

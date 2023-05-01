@@ -9,12 +9,13 @@ program define _03_create
 	
 	// Treatment into dummies
 	tabulate Treatment, gen(treatment)
-	
+		
 	// Transfrom categorical covariates into dummies
 			foreach cat of varlist Covariate_cat* {
+				tostring `cat', replace
 				levelsof `cat', local(catset)
 				foreach c of local catset {
-					gen `cat'_`c' = `c'.`cat'
+					gen dum_`cat'_`c' = (`cat' == "`c'")
 					}
 				}
 			
@@ -26,7 +27,7 @@ program define _03_create
  	}
 	
 	preserve
-		collapse (sum) Assign_treatment* Enroll_treatment* pscore_treatment* treatment* (mean) Year Grade Outcome* Covariate*, by(StudentID)
+		collapse (sum) Assign_treatment* Enroll_treatment* pscore_treatment* treatment* (first) Year Grade Outcome* Covariate* dum_Covariate_cat*, by(StudentID)
 		
 		merge 1:1 StudentID using "runvar_control_`year'_`grade'.dta", nogen
 		

@@ -512,7 +512,7 @@ program define _02_pscore
 
 		compress
 		
-		save "runvar_control_`year'_`grade'.dta"
+		save "runvar_control_`year'_`grade'.dta", replace
 	restore
 end
 
