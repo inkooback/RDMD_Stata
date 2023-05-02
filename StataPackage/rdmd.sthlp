@@ -10,7 +10,7 @@
 
 {title:Title}
 
-{p 4 8}{cmd:rdmd} {hline 2} Bandwidth Selection Procedures for Local Polynomial Regression Discontinuity Estimators.{p_end}
+{p 4 8}{cmd:rdmd} {hline 2} Conduct causal inference using central assignment data.{p_end}
 
 {marker syntax}{...}
 {title:Syntax}

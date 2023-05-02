@@ -122,9 +122,6 @@ program define _05_analysis
 	
 	// save an intermediate file
 	erase "stacked.dta"
-	save "pscore_results.dta", replace
-	
-	use "pscore_results.dta", clear
 	
 	* 3. Run 2SLS regression
 	
@@ -159,7 +156,7 @@ program define _05_analysis
 			rename (Outcome_con*) ($user_Outcome_con)
 		}
 		
-		rename (Enroll_*) ($user_Enrollment*)
+		rename (Enroll*) ($user_Enrollment*)
 		
 		local user_outcomes $user_Outcome_cat $user_Outcome_con
 		local user_enrolls $user_Enrollment*
@@ -174,7 +171,11 @@ program define _05_analysis
 		// Output tables
 		
 		esttab `user_outcomes' using multi.tex, replace booktabs /*
-		*/ title(2SLS\label{tab1}) stats(r2 N) style(fixed) cells(b(star) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01) nodepvars
+		*/ title(2SLS\label{tab1}) stats(r2 N, fmt(a3)) style(tab) nonumbers cells(b(star fmt(%9.3f)) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01) nodepvars
+		
+		esttab `user_outcomes' using multi.csv, csv replace /*
+		*/ title(2SLS\label{tab1}) stats(r2 N, fmt(a3)) style(tab) nonumbers cells(b(star fmt(%9.3f)) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01) nodepvars
+		
 		
 		/*
 
@@ -186,16 +187,25 @@ program define _05_analysis
 			}
 		*/
 	// rename back to user's variable names
-	rename (StudentID Assign_treatment* Year Grade) ($user_StudentID $user_Assignment* $user_Year $user_Grade)
+	rename (StudentID Assign* Year Grade) ($user_StudentID $user_Assignment* $user_Year $user_Grade)
 	
+	// categorical covariates (use values)
 	if $cov_cat_length > 0{
 		rename (Covariate_cat*) ($user_Covariate_cat)
-	}
+		rename (*dum_Covariate_cat*) (cc**)
+		forvalues i = 1 / $cov_cat_length{
+			local cov: word `i' of $cov_cat_list
+			rename (*cc`i'*) (`cov'**)
+			}
+		}
 	
+	// continuous covariates 
 	if $cov_con_length > 0{
 		rename (Covariate_con*) ($user_Covariate_con)
 	}
 	
+	drop treatment*
+	save "pscore_results.dta", replace
 	
 end
 

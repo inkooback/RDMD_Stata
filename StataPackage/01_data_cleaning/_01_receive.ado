@@ -39,7 +39,7 @@ program define _01_receive
 			}
 		
 		// Non-lottery indicator
-		dis "Input your variable name for NonLottery indicator. Values of this variable has to be binary." _request(nonlottery)	
+		dis "Input your variable name for NonLottery indicator." _request(nonlottery)	
 		qui ds
 		// throw warning if the input is not in the varlist
 		if strpos(r(varlist), "$nonlottery") == 0{
@@ -129,7 +129,7 @@ program define _01_receive
 		
 	* 1.3. rename outcomes
 			// 1) categorical
-			dis "Input a list (parsed by space) of your variable names for categorical outcome variables in your dataset." _request(out_cat_list)
+			dis "Input a list (parsed by space) of your variable names for categorical outcome variables in your dataset. Press enter if you have no categorical outcome variables." _request(out_cat_list)
 			
 			// count the number of 
 			global out_cat_length : word count $out_cat_list
@@ -143,7 +143,7 @@ program define _01_receive
 					if strpos(r(varlist), "`out'") == 0{
 						while strpos(r(varlist), "`out'") == 0 {
 							di as error "variable `out' not found"
-							dis "Input a list (parsed by space) of your variable names for categorical outcome variables in your dataset" _request(out_cat_list)
+							dis "Input a list (parsed by space) of your variable names for categorical outcome variables in your dataset. Press enter if you have no categorical outcome variables" _request(out_cat_list)
 							local out: word `i' of $out_cat_list
 							}
 						}
@@ -155,7 +155,7 @@ program define _01_receive
 					if strpos(r(varlist), "`out'") == 0{
 						while strpos(r(varlist), "`out'") == 0 {
 							di as error "variable `out' not found"
-							dis "Input a list (parsed by space) of your variable names for categorical outcome variables in your dataset" _request(out_cat_list)
+							dis "Input a list (parsed by space) of your variable names for categorical outcome variables in your dataset. Press enter if you have no categorical outcome variables" _request(out_cat_list)
 							local out: word `i' of $out_cat_list
 							}
 						}
@@ -166,7 +166,7 @@ program define _01_receive
 			}
 			
 			// 2) countinuous
-			dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset" _request(out_con_list)
+			dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset. Press enter if you have no continuous outcome variables" _request(out_con_list)
 			
 			// count the number of 
 			global out_con_length : word count $out_con_list
@@ -179,7 +179,7 @@ program define _01_receive
 					if strpos(r(varlist), "`out'") == 0{
 						while strpos(r(varlist), "`out'") == 0 {
 							di as error "variable `out' not found"
-							dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset" _request(out_con_list)
+							dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset. Press enter if you have no continuous outcome variables" _request(out_con_list)
 							local out: word `i' of $out_cat_list
 							}
 						}
@@ -191,7 +191,7 @@ program define _01_receive
 					if strpos(r(varlist), "`out'") == 0{
 						while strpos(r(varlist), "`out'") == 0 {
 							di as error "variable `out' not found"
-							dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset" _request(out_con_list)
+							dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset. Press enter if you have no continuous outcome variables" _request(out_con_list)
 							local out: word `i' of $out_con_list
 							}
 						}
@@ -200,6 +200,10 @@ program define _01_receive
 				// pass the variable names to _01_outcome_con as a varlist
 				_01_outcome_con $out_con_list 
 			}
+			
+			if ($out_cat_length == 0) & ($out_con_length == 0) {
+				dis as error "You must have at least one outcome variable."
+				}
 	}
 end
 

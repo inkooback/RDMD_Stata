@@ -4,6 +4,13 @@ program define _01_check
     
     syntax [if]
     
+	* drop rows with missing values 
+	foreach v of var * { 
+		drop if missing(`v') 
+		}
+	
+	dis "Dropped rows with missing data"
+	
 	* 00 sort by ChoiceRank within each student
 	sort StudentID ChoiceRank
 	
@@ -332,6 +339,16 @@ program define _01_check
 			local numnon : word count `non'
 			if `numnon' > 1 {
 				di as error "Inconsistent $user_NonLottery detected for $user_DefaultTiebreakerIndex `default'"
+			}
+		}
+	}
+	
+	* 13 NonLottery is not binary
+	quietly{	
+		levelsof NonLottery, local(nonset)
+		foreach non of local nonset {
+			if (`non' != 0) & (`non' != 0){
+				di as error "$user_NonLottery must be binary (0 or 1)"
 			}
 		}
 	}

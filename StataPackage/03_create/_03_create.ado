@@ -8,16 +8,19 @@ program define _03_create
 	local grade = $Grade
 	
 	// Treatment into dummies
-	tabulate Treatment, gen(treatment)
+	levelsof Treatment, local(treatset)
+	foreach t of local treatset {
+		gen treatment_`t' = (Treatment == `t')
+	}
 		
-	// Transfrom categorical covariates into dummies
-			foreach cat of varlist Covariate_cat* {
-				tostring `cat', replace
-				levelsof `cat', local(catset)
-				foreach c of local catset {
-					gen dum_`cat'_`c' = (`cat' == "`c'")
-					}
-				}
+	// Categorical covariates into dummies
+	foreach cat of varlist Covariate_cat* {
+		tostring `cat', replace
+		levelsof `cat', local(catset)
+		foreach c of local catset {
+			gen dum_`cat'_`c' = (`cat' == "`c'")
+			}
+		}
 			
 	// generate D_i and C_i
 	foreach t of varlist treatment*{
