@@ -13,14 +13,18 @@ program define _02_pscore
 	
 	* 0. count number of unique types
 	egen type = concat(SchoolID Priority), punct(", ")
-
-	preserve
-	bysort StudentID : replace type = type[_n-1] + ", " + type[_n+1] if inrange(_n, 2, _N-1) 
+	bysort StudentID : replace type = type[_n-1] + ", " + type[_n] if inrange(_n, 2, _N) 
 	bysort StudentID : replace type = type[_N-1] 
-	bysort StudentID : keep if _n == 1
-	distinct type
-	global num_type = `r(N)' 
+	
+	/*
+	preserve
+		bysort StudentID : replace type = type[_n-1] + ", " + type[_n] if inrange(_n, 2, _N) 
+		bysort StudentID : replace type = type[_N-1] 
+		bysort StudentID : keep if _n == 1
+		distinct type
+		global num_type_`year'_`grade' = `r(N)' 
 	restore
+	*/
 	
 	* 1. Generate marginal priority (priority group with last offer)
 	bys SchoolID TiebreakerStudentGroupIndex: egen MarginalPriority = max(Priority * Assignment)

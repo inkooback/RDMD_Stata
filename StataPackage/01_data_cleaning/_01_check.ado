@@ -25,7 +25,7 @@ program define _01_check
 			if `numgrades' > 1 {
 				di as error "Inconsistent $user_Grade detected for $user_StudentID `student'"
 			}
-			
+		
 			* default tie-breaker index
 			levelsof DefaultTiebreakerIndex, local(defaultlist)
 			foreach default of local defaultlist {
@@ -37,48 +37,48 @@ program define _01_check
 			}
 			
 			* covariates (categorical)
-			local i = 1
-			foreach covariate of varlist Covariate_cat* {
-				levelsof `covariate' if StudentID == `student', local(set_covariate)
-				local num : word count `set_covariate'
-				if `num' > 1 {
-					di as error "Inconsistent $user_Covariate_cat`i' detected for $user_StudentID `student'"
+			if $cov_cat_length > 0{
+				forvalues i = 1 / $cov_cat_length{
+					levelsof Covariate_cat`i' if StudentID == `student', local(set_covariate)
+					local num : word count `set_covariate'
+					if `num' > 1 {
+						di as error "Inconsistent $user_Covariate_cat`i' detected for $user_StudentID `student'"
+						}
+					}
 				}
-				local i = `i' + 1
-			}
 			
 			* covariates (continuous)
-			local i = 1
-			foreach covariate of varlist Covariate_con* {
-				levelsof `covariate' if StudentID == `student', local(set_covariate)
-				local num : word count `set_covariate'
-				if `num' > 1 {
-					di as error "Inconsistent $user_Covariate_con`i' detected for $user_StudentID `student'"
+			if $cov_con_length > 0{
+				forvalues i = 1 / $cov_con_length{
+					levelsof Covariate_con`i' if StudentID == `student', local(set_covariate)
+					local num : word count `set_covariate'
+					if `num' > 1 {
+						di as error "Inconsistent $user_Covariate_con`i' detected for $user_StudentID `student'"
+						}
+					}
 				}
-				local i = `i' + 1
-			}
 			
 			* outcomes (categorical)
-			local i = 1
-			foreach outcome of varlist Outcome_cat* {
-				levelsof `outcome' if StudentID == `student', local(set_outcome)
-				local num : word count `set_outcome'
-				if `num' > 1 {
-					di as error "Inconsistent $user_Outcome_cat`i' detected for $user_StudentID `student'"
+			if $out_cat_length > 0{
+				forvalues i = 1 / $out_cat_length{
+					levelsof Outcome_cat`i' if StudentID == `student', local(set_outcome)
+					local num : word count `set_outcome'
+					if `num' > 1 {
+						di as error "Inconsistent $user_Outcome_cat`i' detected for $user_StudentID `student'"
+						}
+					}
 				}
-				local i = `i' + 1
-			}
 			
 			* outcomes (continuous)
-			local i = 1
-			foreach outcome of varlist Outcome_con* {
-				levelsof `outcome' if StudentID == `student', local(set_outcome)
-				local num : word count `set_outcome'
-				if `num' > 1 {
-					di as error "Inconsistent $user_Outcome_con`i' detected for $user_StudentID `student'"
-				}
-				local i = `i' + 1
-			}
+			if $out_con_length > 0{
+				forvalues i = 1 / $out_con_length{
+					levelsof Outcome_con`i' if StudentID == `student', local(set_outcome)
+					local num : word count `set_outcome'
+					if `num' > 1 {
+						di as error "Inconsistent $user_Outcome_con`i' detected for $user_StudentID `student'"
+						}
+					}
+				}	
 		}
 	}
 	

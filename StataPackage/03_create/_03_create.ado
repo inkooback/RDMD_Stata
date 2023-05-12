@@ -24,17 +24,20 @@ program define _03_create
 			
 	// generate D_i and C_i
 	foreach t of varlist treatment*{
-		gen Assign_`t' = Assignment * `t'
-		gen Enroll_`t' = Enrollment * `t'
+		// gen Assign_`t' = Assignment * `t'
+		// gen Enroll_`t' = Enrollment * `t'
 		gen pscore_`t' = pscore * `t'
  	}
 	
+	gen Assign_x_Treat = Assignment * Treatment
+	gen Enroll_x_Treat = Enrollment * Treatment
+	
 	preserve
-		collapse (sum) Assign_treatment* Enroll_treatment* pscore_treatment* treatment* (first) Year Grade Outcome* Covariate* dum_Covariate_cat*, by(StudentID)
+		collapse (sum) Assign_x_Treat Enroll_x_Treat pscore_treatment* treatment* (first) Year Grade Outcome* Covariate* dum_Covariate_cat* type, by(StudentID)
 		
 		merge 1:1 StudentID using "runvar_control_`year'_`grade'.dta", nogen
 		
-		save "variable_`year'_`grade'.dta"
+		save "variable_`year'_`grade'.dta", replace
 	restore
 	
 	erase "runvar_control_`year'_`grade'.dta"
