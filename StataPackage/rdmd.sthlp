@@ -148,7 +148,7 @@ RDhonest package.{p_end}
 {title:References}
 
 {p 4 8}Abdulkadiroglu, A., J. D. Angrist, Y. Narita, and P. Pathak. 2022.
-{browse "https://rdpackages.github.io/references/Calonico-Cattaneo-Farrell_2020_ECTJ.pdf":Breaking Ties: Regression Discontinuity Design Meets Market Design}.
+{browse "https://github.com/inkooback/RDMD_Stata/blob/main/references/Econometrica_2022.pdf":Breaking Ties: Regression Discontinuity Design Meets Market Design}.
 {it:Econometrica} 90(1): 117-151.{p_end}
 
 {p 4 8}Calonico, S., M. D. Cattaneo, and M. H. Farrell. 2020.
@@ -190,6 +190,12 @@ RDhonest package.{p_end}
 {p 4 8}Cattaneo, M. D., B. Frandsen, and R. Titiunik. 2015.
 {browse "https://rdpackages.github.io/references/Cattaneo-Frandsen-Titiunik_2015_JCI.pdf":Randomization Inference in the Regression Discontinuity Design: An Application to Party Advantages in the U.S. Senate}.
 {it:Journal of Causal Inference} 3(1): 1-24.{p_end}
+
+{p 4 8}Imbens, G. W., and K. Kalyanaraman. 2012.
+{browse "https://github.com/inkooback/RDMD_Stata/blob/main/references/Econometrica_2022.pdf":Optimal Bandwidth Choice for the Regression Discontinuity Estimator}.
+{it:Review of Economics Studies} 79(3): 933-959.{p_end}
+
+
 
 
 {marker authors}{...}
