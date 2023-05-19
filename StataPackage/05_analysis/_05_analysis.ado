@@ -163,19 +163,36 @@ program define _05_analysis
 		mat rename r(coefs) raw
 		mat list raw
 		scalar r = rowsof(raw)
-		mat raw = raw[2..r-1,1...]
-		
-		mat A = (1\2)
+
+		// N
+		mat A = J(r, 1, _N)
 		mat colnames A = N
 		mat raw = raw, A
 		
-		mat B = (1\2)
+		// Number of types
+		qui unique Type
+		scalar t = `r(sum)'
+		mat B = J(r, 1, t)
 		mat colnames B = Types
 		mat raw = raw, B
 		
-		mat C = (1\2)
+		// Number of pscores
+		
+		mat C = (.)
+		foreach t of varlist treatment* {
+			qui unique pscore_`t'
+			dis "Propensity scores for `t' have `r(sum)' unique values."
+			mat C = C \ `r(sum)'
+			}
+		mat C = C \ 1
+		
+		mat C = C[2..r+1,1...]
+		
 		mat colnames C = Number_of_pscores
 		mat raw = raw, C
+		
+		mat raw = raw[2..r-1,1...]
+		mat list raw
 		
 	// 4.1.2. OLS
 		
@@ -233,22 +250,39 @@ program define _05_analysis
 		mat control_stats = control_stats[1,1...]
 		mat rownames control_stats = Controlled
 		
-		// get coeffieicents
+		// get coefficients
 		mat list r(coefs)
 		mat rename r(coefs) control
 		mat list control
-		
-		mat D = (1\2)
+		scalar r = rowsof(control)
+
+		// N
+		mat D = J(r, 1, _N)
 		mat colnames D = N
 		mat control = control, D
 		
-		mat E = (1\2)
+		// Number of types
+		qui unique Type
+		scalar t = `r(sum)'
+		mat E = J(r, 1, t)
 		mat colnames E = Types
 		mat control = control, E
 		
-		mat F = (1\2)
+		// Number of pscores
+		
+		mat F = (.)
+		foreach t of varlist treatment* {
+			qui unique pscore_`t'
+			dis "Propensity scores for `t' have `r(sum)' unique values."
+			mat F = F \ `r(sum)'
+			}
+		mat F = F \ 1
+		
+		mat F = F[2..r+1,1...]
+		
 		mat colnames F = Number_of_pscores
 		mat control = control, F
+		mat list control
 		
 		// Merge with raw balance
 		mat Balance = raw\control
@@ -261,7 +295,6 @@ program define _05_analysis
 		// add OLS / 2SLS header and print out
 		esttab matrix(Balance, transpose) using balance.tex, replace mtitle("\textbf{Left half: Uncontrolled. Right half: Controlled}") //Final Table
 		esttab matrix(Balance, transpose) using balance.csv, csv replace //Final Table
-		
 		
 		// 4.2.2. 2SLS regression
 	
@@ -292,6 +325,7 @@ program define _05_analysis
 	// rename back to user's variable names
 	rename (StudentID Year Grade) ($user_StudentID $user_Year $user_Grade)
 	
+	/*
 	* Provide information about the applicant types and the number of unique values of pscore
 	// types
 	qui levelsof $user_Year, local(yearlist)
@@ -307,6 +341,7 @@ program define _05_analysis
 		qui unique pscore_`t'
 		dis "Propensity scores for `t' have `r(sum)' unique values."
 	}
+	*/
 	
 	// drop treatment dummies
 	drop treatment*

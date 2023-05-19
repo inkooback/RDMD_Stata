@@ -2,7 +2,31 @@ capture program drop _00_Master
 program define _00_Master
     version 15.0
     
-    syntax [anything] [if]
+    syntax [, bwtype(string) bwcriterion(integer 0)]
+	
+	* receive bandwidth selection
+	if "`bwtype'"  == ""{
+		dis "Choose bandwidth type (IK / CCFT). Press enter to set as default (IK)" _request(bwtype)
+		// throw an error if the input is not right
+		if inlist("$bwtype", "IK", "ik", "CCFT", "ccft", "") == 0{
+			while inlist("$bwtype", "IK", "ik", "CCFT", "ccft", "") == 0 {
+				dis as error "Bandwidth type must be IK or CCFT"
+				dis "Choose bandwidth type (IK / CCFT). Press enter to set as default (IK)" _request(bwtype)
+				}
+			}
+		}
+		
+	if "`bwcriterion'"  == "0"{
+		* receive bandwidth population criterion selection
+		dis "Choose bandwidth population criterion (integer). Press enter to set as default (5)" _request(bwcriterion)
+		// throw an error if the input is not integer
+		if (mod($bwcriterion, 1) != 0){
+			while mod($bwcriterion, 1) != 0 {
+				dis as error "Must be integer"
+				dis "Choose bandwidth population criterion (integer). Press enter to set as default (5)" _request(bwcriterion)
+				}
+			}
+		}
 	
 	noisily{
 		
@@ -10,6 +34,7 @@ program define _00_Master
 		ssc inst unique
 		ssc install ranktest 
 		ssc inst ivreg2
+		ssc install outreg
 		
 		* Download a package for CCFT bandwith calculation
 		net install rdrobust, from(https://raw.githubusercontent.com/rdpackages/rdrobust/master/stata) replace
@@ -45,7 +70,7 @@ program define _00_Master
 		global num_type = ""
 			
 		* receive the user's variable names and pass them to be renamed.
-		_01_receive
+		_01_rename
 
 		* conduct feasibility check
 		* _01_check
@@ -53,28 +78,7 @@ program define _00_Master
 		* save file after step 1
 		save "step1_finished.dta", replace
 		
-		* receive bandwidth selection
-		dis "Choose bandwidth type (IK / CCFT). Press enter to set as default (IK)" _request(bwtype)
-		// throw an error if the input is not right
-		if inlist("$bwtype", "IK", "ik", "CCFT", "ccft", "") == 0{
-			while inlist("$bwtype", "IK", "ik", "CCFT", "ccft", "") == 0 {
-				dis as error "Bandwidth type must be IK or CCFT"
-				dis "Choose bandwidth type (IK / CCFT). Press enter to set as default (IK)" _request(bwtype)
-				}
-			}
-		
-		* receive bandwidth population criterion selection
-		dis "Choose bandwidth population criterion (integer). Press enter to set as default (5)" _request(criterion)
-		// throw an error if the input is not integer
-		if (mod($criterion, 1) != 0){
-			while mod($criterion, 1) != 0 {
-				dis as error "Must be integer"
-				dis "Choose bandwidth population criterion (integer). Press enter to set as default (5)" _request(criterion)
-				}
-			}
-		
 		* calculate pscores and create variables looping over years and grades
-		local counter = 0
 		levelsof Year, local(yearlist)
 		foreach year of local yearlist {
 			global Year = `year'
@@ -88,17 +92,17 @@ program define _00_Master
 				keep if (Year == `year') & (Grade == `grade')
 				
 				// consider default
-				if "$bwtype" == "" | "$criterion" == ""{
+				if "$bwtype" == "" | "$bwcriterion" == ""{
 					_02_pscore IK 5
 					}
-				else if ("$bwtype" == "") | ("$criterion" != ""){
-					_02_pscore IK $criterion
+				else if ("$bwtype" == "") | ("$bwcriterion" != ""){
+					_02_pscore IK $bwcriterion
 					}
-				else if ("$bwtype" != "") | ("$criterion" == ""){
+				else if ("$bwtype" != "") | ("$bwcriterion" == ""){
 					_02_pscore $bwtype 5
 					}
 				else{
-					_02_pscore $bwtype $criterion
+					_02_pscore $bwtype $bwcriterion
 					}
 				_03_create
 				}

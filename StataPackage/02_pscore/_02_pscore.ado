@@ -12,9 +12,9 @@ program define _02_pscore
 	local grade = $Grade
 	
 	* 0. count number of unique types
-	egen type = concat(SchoolID Priority), punct(", ")
-	bysort StudentID : replace type = type[_n-1] + ", " + type[_n] if inrange(_n, 2, _N) 
-	bysort StudentID : replace type = type[_N-1] 
+	egen Type = concat(SchoolID Priority), punct(", ")
+	bysort StudentID : replace Type = Type[_n-1] + ", " + Type[_n] if inrange(_n, 2, _N) 
+	bysort StudentID : replace Type = Type[_N-1] 
 	
 	/*
 	preserve
