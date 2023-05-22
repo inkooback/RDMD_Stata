@@ -22,18 +22,20 @@ program define _03_create
 			}
 		}
 			
-	// generate D_i and C_i
+	
 	foreach t of varlist treatment*{
 		// gen Assign_`t' = Assignment * `t'
 		// gen Enroll_`t' = Enrollment * `t'
 		gen pscore_`t' = pscore * `t'
  	}
 	
+	// generate D_i and C_i
 	gen Assign_x_Treat = Assignment * Treatment
 	gen Enroll_x_Treat = Enrollment * Treatment
 	
+	// Remain only relevant variables
 	preserve
-		collapse (sum) Assign_x_Treat Enroll_x_Treat pscore_treatment* treatment* (first) Year Grade Outcome* Covariate* dum_Covariate_cat* type, by(StudentID)
+		collapse (sum) Assign_x_Treat Enroll_x_Treat pscore_treatment* treatment* (first) Year Grade Outcome* Covariate* dum_Covariate_cat* Type, by(StudentID)
 		
 		merge 1:1 StudentID using "runvar_control_`year'_`grade'.dta", nogen
 		

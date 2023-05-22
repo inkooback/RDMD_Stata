@@ -258,7 +258,7 @@ program define _01_rename
 
 	* 1.2. rename covariates
 			// 1) categorical
-			dis "Input a list (parsed by space) of your variable names for categorical covariates in your dataset. Press enter if you have no categorical covariate." _request(cov_cat_list)
+			dis "Input a list (parsed by space) of your variable names for categorical covariates in your dataset (Example: gender race). Press enter if you have no categorical covariate." _request(cov_cat_list)
 			
 			// count the number of 
 			global cov_cat_length : word count $cov_cat_list
@@ -272,7 +272,7 @@ program define _01_rename
 					if strpos(r(varlist), "`cov'") == 0{
 						while strpos(r(varlist), "`cov'") == 0 {
 							di as error "variable `cov' not found"
-							dis "Input a list (parsed by space) of your variable names for categorical covariates in your dataset. Press enter if you have no categorical covariate." _request(cov_cat_list)
+							dis "Input a list (parsed by space) of your variable names for categorical covariates in your dataset (Example: gender race). Press enter if you have no categorical covariate." _request(cov_cat_list)
 							local cov: word `i' of $cov_cat_list
 						}
 					}
@@ -284,7 +284,7 @@ program define _01_rename
 					if strpos(r(varlist), "`cov'") == 0{
 						while strpos(r(varlist), "`cov'") == 0 {
 							di as error "variable `cov' not found"
-							dis "Input a list (parsed by space) of your variable names for categorical covariates in your dataset. Press enter if you have no categorical covariate." _request(cov_cat_list)
+							dis "Input a list (parsed by space) of your variable names for categorical covariates in your dataset. (Example: gender race) Press enter if you have no categorical covariate." _request(cov_cat_list)
 							local cov: word `i' of $cov_cat_list
 							}
 						}
@@ -373,7 +373,7 @@ program define _01_rename
 			*/
 			
 			// 2) countinuous
-			dis "Input a list (parsed by space) of your variable names for the outcome variables in your dataset. They must be continuous variables. Press enter if you have no continuous outcome variables" _request(out_con_list)
+			dis "Input a list (parsed by space) of your variable names for the outcome variables in your dataset (Example: math reading). You must have at least one outcome variable." _request(out_con_list)
 			
 			// count the number of 
 			global out_con_length : word count $out_con_list
@@ -386,7 +386,7 @@ program define _01_rename
 					if strpos(r(varlist), "`out'") == 0{
 						while strpos(r(varlist), "`out'") == 0 {
 							di as error "variable `out' not found"
-							dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset. Press enter if you have no continuous outcome variables" _request(out_con_list)
+							dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset. You must have at least one outcome variable." _request(out_con_list)
 							local out: word `i' of $out_cat_list
 							}
 						}
@@ -398,7 +398,7 @@ program define _01_rename
 					if strpos(r(varlist), "`out'") == 0{
 						while strpos(r(varlist), "`out'") == 0 {
 							di as error "variable `out' not found"
-							dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset. Press enter if you have no continuous outcome variables" _request(out_con_list)
+							dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset. You must have at least one outcome variable." _request(out_con_list)
 							local out: word `i' of $out_con_list
 							}
 						}

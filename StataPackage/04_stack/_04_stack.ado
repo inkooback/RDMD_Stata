@@ -10,6 +10,7 @@ program define _04_stack
 	tempfile seed_for_append
 	save `seed_for_append'
 	
+	// stack "variable_`year'_`grade'.dta" made at the end of the step 3 over all years and grades
 	quietly{
 		use "step1_finished.dta", clear
 		levelsof Year, local(yearlist)

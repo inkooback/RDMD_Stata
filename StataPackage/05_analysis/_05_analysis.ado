@@ -177,7 +177,6 @@ program define _05_analysis
 		mat raw = raw, B
 		
 		// Number of pscores
-		
 		mat C = (.)
 		foreach t of varlist treatment* {
 			qui unique pscore_`t'
@@ -185,7 +184,6 @@ program define _05_analysis
 			mat C = C \ `r(sum)'
 			}
 		mat C = C \ 1
-		
 		mat C = C[2..r+1,1...]
 		
 		mat colnames C = Number_of_pscores
@@ -269,7 +267,6 @@ program define _05_analysis
 		mat control = control, E
 		
 		// Number of pscores
-		
 		mat F = (.)
 		foreach t of varlist treatment* {
 			qui unique pscore_`t'
@@ -277,7 +274,6 @@ program define _05_analysis
 			mat F = F \ `r(sum)'
 			}
 		mat F = F \ 1
-		
 		mat F = F[2..r+1,1...]
 		
 		mat colnames F = Number_of_pscores
@@ -324,24 +320,6 @@ program define _05_analysis
 	
 	// rename back to user's variable names
 	rename (StudentID Year Grade) ($user_StudentID $user_Year $user_Grade)
-	
-	/*
-	* Provide information about the applicant types and the number of unique values of pscore
-	// types
-	qui levelsof $user_Year, local(yearlist)
-		foreach year of local yearlist {
-			qui levelsof $user_Grade, local(gradelist)
-			foreach grade of local gradelist {
-				dis "Applicants in your data have ${num_type_`year'_`grade'} types in $user_Year `year' and $user_Grade `grade'."
-			}
-		}
-
-	// pscores
-	foreach t of varlist treatment* {
-		qui unique pscore_`t'
-		dis "Propensity scores for `t' have `r(sum)' unique values."
-	}
-	*/
 	
 	// drop treatment dummies
 	drop treatment*
