@@ -38,6 +38,7 @@ program define _02_pscore
 	egen runvar_max =  max(rank) if (NonLottery == 1 & Marginal == 1 & indi_missing_rank_mod == 0)
 	egen runvar_min =  min(rank) if (NonLottery == 1 & Marginal == 1 & indi_missing_rank_mod == 0)
 
+	// Keep original rank
 	gen rank_mod_no_rescale = rank
 	
 	// Rescale marginal group

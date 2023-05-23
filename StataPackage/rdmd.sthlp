@@ -136,7 +136,7 @@
 {synopt :{cmd:11}}An applicant is assigned to school {it:s}, even though (1) she prefers school {it:s'} to {it:s}, (2) her applicant position at {it:s'} was better than her position at {it:s}, (3) there were still available spots at {it:s'}, (4) and she is eligible at {it:s'}{p_end}
 {synopt :{cmd:12}}Abnormally large value found in a column that is unlikely to have a huge outlier{p_end}
 {synopt :{cmd:13}}A school uses non-lottery tie-breaker, and correlation between Priority and Tie-breaker within the school approximates 1{p_end}
-{synopt :{cmd:14}}Only one treatment value{p_end}
+{synopt :{cmd:14}}No variation in treatment{p_end}
 {synopt :{cmd:15}}Advantage not in the range (0,1]{p_end}
 {synoptline}
 	
