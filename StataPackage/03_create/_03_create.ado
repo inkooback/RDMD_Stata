@@ -22,10 +22,8 @@ program define _03_create
 			}
 		}
 			
-	
+	// pscore to each treated schools 
 	foreach t of varlist treatment*{
-		// gen Assign_`t' = Assignment * `t'
-		// gen Enroll_`t' = Enrollment * `t'
 		gen pscore_`t' = pscore * `t'
  	}
 	
@@ -37,6 +35,7 @@ program define _03_create
 	preserve
 		collapse (sum) Assign_x_Treat Enroll_x_Treat pscore_treatment* treatment* (first) Year Grade Outcome* Covariate* dum_Covariate_cat* Type, by(StudentID)
 		
+		// Merge running variable controls
 		merge 1:1 StudentID using "runvar_control_`year'_`grade'.dta", nogen
 		
 		save "variable_`year'_`grade'.dta", replace

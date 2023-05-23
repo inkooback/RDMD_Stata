@@ -102,7 +102,7 @@
 {synopt :{cmd:Default Tie-breaker Index}}Tie-breaker index the applicant has at the school. This variable stores integer type data.{p_end}
 {p2coldent:* {cmd:Non-Lottery Index}}Index for the non-lottery schools. 0 for lottery schools, 1 for non-lottery schools. This variable stores binary type data.{p_end}
 {p2coldent:* {cmd:Tie-breaker Applicant Group Index}}Index for applicant groups. 0 for the default group. This variable stores integer type data.{p_end}
-{p2coldent:* {cmd:Advantage}}Applicants' tie-breaker values will be multiplied by the advantage. For example, If advantage is 0.7, the applicant's tie-breaker value will be multiplied by 0.7 at the school. This variable stores float type data.{p_end}
+{p2coldent:* {cmd:Advantage}}Applicants' tie-breaker values will be multiplied by the advantage. For example, If advantage is 0.7, the applicant's tie-breaker value will be multiplied by 0.7 at the school. Values should be in the range (0,1]. This variable stores float type data.{p_end}
 {synopt :{cmd:Default Tie-breaker}}Tie-breaker value of the student at the program. This variable stores float type data.{p_end}
 {synopt :{cmd:Assignment}}Assignment of the applicant at the school. 0 = not assigned. 1 = assigned.  This variable stores binary type data.{p_end}
 {synopt :{cmd:Enrollment}}Enrollment of the applicant at the school. 0 = not enrolled. 1 = enrolled. This variable stores binary type data.{p_end}
@@ -136,6 +136,8 @@
 {synopt :{cmd:11}}An applicant is assigned to school {it:s}, even though (1) she prefers school {it:s'} to {it:s}, (2) her applicant position at {it:s'} was better than her position at {it:s}, (3) there were still available spots at {it:s'}, (4) and she is eligible at {it:s'}{p_end}
 {synopt :{cmd:12}}Abnormally large value found in a column that is unlikely to have a huge outlier{p_end}
 {synopt :{cmd:13}}A school uses non-lottery tie-breaker, and correlation between Priority and Tie-breaker within the school approximates 1{p_end}
+{synopt :{cmd:14}}Only one treatment value{p_end}
+{synopt :{cmd:15}}Advantage not in the range (0,1]{p_end}
 {synoptline}
 	
 

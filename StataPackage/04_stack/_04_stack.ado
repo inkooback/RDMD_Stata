@@ -4,18 +4,23 @@ program define _04_stack
     
     syntax [anything] [if]
 	
+	// Initialize
 	clear
-	set obs 1
-	gen seed_for_append = .
+	set obs 1				
+	gen seed_for_append = .	
 	tempfile seed_for_append
 	save `seed_for_append'
 	
-	// stack "variable_`year'_`grade'.dta" made at the end of the step 3 over all years and grades
+	// Stack "variable_`year'_`grade'.dta" made at the end of the step 3 over all years and grades
 	quietly{
 		use "step1_finished.dta", clear
+		
+		// Loop over years
 		levelsof Year, local(yearlist)
 		foreach year of local yearlist {
 			use "step1_finished.dta", clear
+			
+			// Loop over grades
 			levelsof Grade, local(gradelist)
 			foreach grade of local gradelist {
 				clear
@@ -25,7 +30,8 @@ program define _04_stack
 			}
 		}
 		
-		drop in 1
+		// Erase the initial row and column
+		drop in 1		
 		drop seed_for_append
 		
 		save "stacked.dta", replace

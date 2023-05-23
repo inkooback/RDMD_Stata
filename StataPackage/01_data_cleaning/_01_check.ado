@@ -4,14 +4,14 @@ program define _01_check
     
     syntax [if]
     
-	* drop rows with missing values 
+	* Drop rows with missing values 
 	foreach v of var * { 
 		drop if missing(`v') 
 		}
 	
 	dis "Dropped rows with missing data"
 	
-	* 00 sort by ChoiceRank within each student
+	* Sort by ChoiceRank within each student
 	sort StudentID ChoiceRank
 	
 	* 01 Inconsistency within a student (grade, tie-breaker, covariate, and outcome)
@@ -19,14 +19,14 @@ program define _01_check
 		levelsof StudentID, local(studentlist)
 		foreach student of local studentlist {
 			
-			* grade
+			* Grade
 			levelsof Grade if StudentID == `student', local(grades)
 			local numgrades : word count `grades'
 			if `numgrades' > 1 {
 				di as error "Inconsistent $user_Grade detected for $user_StudentID `student'"
 			}
 		
-			* default tie-breaker index
+			* Default tie-breaker index
 			levelsof DefaultTiebreakerIndex, local(defaultlist)
 			foreach default of local defaultlist {
 				levelsof DefaultTiebreaker if (StudentID == `student') & (DefaultTiebreakerIndex == `default'), local(breakers)
@@ -36,7 +36,7 @@ program define _01_check
 				}
 			}
 			
-			* covariates (categorical)
+			* Covariates (categorical)
 			if $cov_cat_length > 0{
 				forvalues i = 1 / $cov_cat_length{
 					levelsof Covariate_cat`i' if StudentID == `student', local(set_covariate)
@@ -47,7 +47,7 @@ program define _01_check
 					}
 				}
 			
-			* covariates (continuous)
+			* Covariates (continuous)
 			if $cov_con_length > 0{
 				forvalues i = 1 / $cov_con_length{
 					levelsof Covariate_con`i' if StudentID == `student', local(set_covariate)
@@ -58,7 +58,8 @@ program define _01_check
 					}
 				}
 			
-			* outcomes (categorical)
+			/*
+			* Outcomes (categorical)
 			if $out_cat_length > 0{
 				forvalues i = 1 / $out_cat_length{
 					levelsof Outcome_cat`i' if StudentID == `student', local(set_outcome)
@@ -68,8 +69,9 @@ program define _01_check
 						}
 					}
 				}
+			*/
 			
-			* outcomes (continuous)
+			* Outcomes (continuous)
 			if $out_con_length > 0{
 				forvalues i = 1 / $out_con_length{
 					levelsof Outcome_con`i' if StudentID == `student', local(set_outcome)
@@ -78,7 +80,7 @@ program define _01_check
 						di as error "Inconsistent $user_Outcome_con`i' detected for $user_StudentID `student'"
 						}
 					}
-				}	
+				}
 		}
 	}
 	
@@ -91,21 +93,21 @@ program define _01_check
 				levelsof SchoolID, local(schoollist)
 				foreach school of local schoollist {
 					
-					* treatment
+					* Treatment
 					levelsof Treatment if (Year == `year') & (Grade == `grade') & (SchoolID == `school'), local(treatment)
 					local numtreat : word count `treatment'
 					if `numtreat' > 1 {
 					di as error "Inconsistent $user_Treatment detected for $user_SchoolID `school'"
 					}
 					
-					* capacity
+					* Capacity
 					levelsof Capacity if (Year == `year') & (Grade == `grade') & (SchoolID == `school'), local(capacity)
 					local numcapa : word count `capacity'
 					if `numcapa' > 1 {
 					di as error "Inconsistent $user_Capacity detected for $user_SchoolID `school'"
 					}
 					
-					* advantage
+					* Advantage
 					levelsof Advantage if (Year == `year') & (Grade == `grade') & (SchoolID == `school'), local(advantage)
 					local numadv : word count `advantage'
 					if `numadv' > 2 { 
@@ -165,13 +167,13 @@ program define _01_check
 		levelsof StudentID, local(studentlist)
 		foreach student of local studentlist {
 			
-			* assignment
+			* Assignment
 			summarize Assignment if StudentID == `student' & Assignment == 1
 			if `r(N)' >  1 {
 				di as error "Multiple $user_Assignment for $user_StudentID `student'"
 			}
 			
-			* enrollment
+			* Enrollment
 			summarize Enrollment if StudentID == `student' & Enrollment == 1
 			if `r(N)' >  1 {
 				di as error "Multiple $user_Enrollment for $user_StudentID `student'"
@@ -352,6 +354,21 @@ program define _01_check
 			}
 		}
 	}
+	
+	* 14 Only one treatment value
+	qui unique Treatment
+	if `r(sum)' < 2{
+				di as error "At least 2 $user_Treatment value is needed."
+			}
+			
+	* 15 Advantage not in the proper range
+	qui sum Advantage
+	if `r(min)' == 0{
+				di as error "Advantage must be in the range (0,1]."
+			}
+	if `r(max)' > 1{
+				di as error "Advantage must be in the range (0,1]."
+			}
 end
 
 *=============================================================================
