@@ -4,10 +4,12 @@ program define _00_Master
     
     syntax [, bwtype(string) bwcriterion(integer 0)]
 	
+	* Set bandwidth type if included in the option
 	if "`bwtype'"  != ""{
 		global bwtype = "`bwtype'"
 	}
 	
+	* Set bandwidth criterion if included in the option
 	if "`bwcriterion'"  != "0"{
 		global bwcriterion = "`bwcriterion'"
 	}
@@ -37,6 +39,8 @@ program define _00_Master
 			}
 		}
 	
+	* At this point, global macros $bwtype and $bwcriterion are created (might be empty).
+	
 	noisily{
 		
 		* Install required commands
@@ -48,7 +52,7 @@ program define _00_Master
 		* Download a package for CCFT bandwith calculation
 		net install rdrobust, from(https://raw.githubusercontent.com/rdpackages/rdrobust/master/stata) replace
 		
-		* Initialize global variables
+		* Initialize all the global macros
 		global Year = ""
 		global Grade = ""
 		global cov_cat_length = ""
@@ -78,13 +82,13 @@ program define _00_Master
 		global user_Outcome_con = ""
 		global num_type = ""
 			
-		* Receive the user's variable names and pass them to be renamed.
+		* Receive the user's variable names and rename them
 		_01_rename
 
 		* Conduct feasibility check
 		* _01_check
 		
-		* Save file after step 1
+		* Save file after step 1. This will be erased at the end of the step 4.
 		save "step1_finished.dta", replace
 		
 		* Calculate pscores and create variables looping over years and grades
@@ -116,14 +120,16 @@ program define _00_Master
 				else{
 					_02_pscore $bwtype $bwcriterion
 					}
+				
+				// Create variables we need for analysis
 				_03_create
 				}
 			}
 		
-		* Stack over years and grades
+		* Stack the result files of step 3 over every year and grade
 		_04_stack
 
-		* Conduct additional preprocessing and conduct Balance + OLS + 2SLS regression
+		* Conduct additional preprocessing and conduct Balance / OLS / 2SLS regressions
 		_05_analysis
 	}
 end

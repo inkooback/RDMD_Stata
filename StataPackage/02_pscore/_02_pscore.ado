@@ -17,14 +17,14 @@ program define _02_pscore
 	bysort StudentID : replace Type = Type[_N-1] 
 	
 	* 1. Generate marginal priority (priority group with last offer)
-	bys SchoolID TiebreakerStudentGroupIndex: egen MarginalPriority = max(Priority * Assignment)
+	bys SchoolID : egen MarginalPriority = max(Priority * Assignment)
 	format MarginalPriority %12.0g
 
 	// Generate marginal indicator
 	gen Marginal = (Priority == MarginalPriority)
 	
 	// Applicant rank
-	gen rank = Priority + EffectiveTiebreaker
+	gen rank = EffectiveTiebreaker
 		
 	// Generate indicator for missing ranks
 	gen indi_missing_rank_mod = (rank == . & NonLottery == 1)
@@ -33,19 +33,19 @@ program define _02_pscore
 	sum rank
 	replace rank = r(max) * 1000 if indi_missing_rank_mod == 1
 
-	// Rescale running variables to (0,1], as described in the paper
+	// Rescale running variables to (0, 1], as described in the paper (p. 134)
 	// Notice that we do that within the marginal group only
-	egen runvar_max =  max(rank) if (NonLottery == 1 & Marginal == 1 & indi_missing_rank_mod == 0)
-	egen runvar_min =  min(rank) if (NonLottery == 1 & Marginal == 1 & indi_missing_rank_mod == 0)
+	bys DefaultTiebreakerIndex : egen runvar_max = max(rank) if (Marginal == 1 & indi_missing_rank_mod == 0)
+	bys DefaultTiebreakerIndex : egen runvar_min = min(rank) if (Marginal == 1 & indi_missing_rank_mod == 0)
 
 	// Keep original rank
 	gen rank_mod_no_rescale = rank
 	
-	// Rescale marginal group
-	replace rank = (rank_mod_no_rescale - runvar_min + 1) / (runvar_max -  runvar_min + 1) if (runvar_max -  runvar_min != 0)
+	// Rescale marginal group for non-lottery tie-breakers
+	replace rank = (rank_mod_no_rescale - runvar_min + 1) / (runvar_max -  runvar_min + 1) if (Marginal == 1)
 	
 	// Non-marginal applicants
-	replace rank = 1 if (runvar_max -  runvar_min == 0)
+	replace rank = 1 if (Marginal != 1)
 	
 	// Applicants with missing ranks
 	replace rank = 99 if indi_missing_rank_mod == 1
@@ -285,7 +285,7 @@ program define _02_pscore
 		sort StudentID ChoiceRank
 		gen ever_seated_more_preferred = 0
 		la var ever_seated_more_preferred "1 if you ever cleared marginal priority at a more preferred school"
-		by StudentID: replace ever_seated_more_preferred =  max(ever_seated_more_preferred[_n-1 ], t_a[ _n-1 ]) if _n > 1  //maximum so that if its ever 1 the following chain will be 1.
+		by StudentID: replace ever_seated_more_preferred =  max(ever_seated_more_preferred[_n-1], t_a[_n-1]) if _n > 1  // maximum so that if its ever 1 the following chain will be 1.
 
 	* 	Case 2: never get more preferred
 		// Applicant is always in t=n at any higher ranked school
@@ -293,7 +293,7 @@ program define _02_pscore
 		// By convention MID is 0 at first choice, because applicant can never get a better choice
 		gen never_get_more_preferred = 1
 		la var never_get_more_preferred "Student never clears marginal priority at more preferred schools"
-		by StudentID: replace never_get_more_preferred =  min(never_get_more_preferred[_n-1 ], t_n[ _n-1 ]) if _n > 1
+		by StudentID: replace never_get_more_preferred =  min(never_get_more_preferred[_n-1], t_n[_n-1]) if _n > 1		// minimum so that if its ever 0 the following chain will be 0.
 
 	* 	Case 3: conditionally get more preferred
 		// Applicant is in t=c in at least one more preferred school, but never t=a
@@ -301,12 +301,12 @@ program define _02_pscore
 		// Check if applicant is ever marginal at a more preferred school
 		sort StudentID ChoiceRank
 		gen ever_marginal_more_preferred = 0
-		by StudentID: replace ever_marginal_more_preferred = max(ever_marginal_more_preferred[_n-1 ], t_c[ _n-1 ]) if _n > 1
+		by StudentID: replace ever_marginal_more_preferred = max(ever_marginal_more_preferred[_n-1], t_c[_n-1]) if _n > 1
 
 		// Check if applicant is always either t_c or t_n at more preferred schools (never t_a)
 		gen either_t_cn = max(t_c, t_n)
 		gen always_t_cn_more_preferred = 1
-		by StudentID: replace always_t_cn_more_preferred =  min(always_t_cn_more_preferred[_n-1 ], either_t_cn[ _n-1 ]) if _n > 1
+		by StudentID: replace always_t_cn_more_preferred =  min(always_t_cn_more_preferred[_n-1], either_t_cn[_n-1]) if _n > 1
 
 		// Check if applicant is t_a but with at least one marginal school (non-degenerate better set risk)
 		gen sometimes_get_more_preferred = (always_t_cn_more_preferred == 1) & (ever_marginal_more_preferred == 1)
@@ -388,7 +388,7 @@ program define _02_pscore
 				if (t_a == 1) & (ever_seated_more_preferred == 0)
 
 		*	Lottery school with risk at s
-			replace pscore =  lambda * 0.5^(number_of_bw) * max(0, (Cutoff - mid) / one_minus_mid) ///
+			replace pscore =  lambda * 0.5^(number_of_bw) * max(0, (DefaultCutoff - mid) / one_minus_mid) ///
 				if (t_c == 1) & (ever_seated_more_preferred == 0) & (NonLottery == 0)
 
 		*	Screened school with risk at s
@@ -429,10 +429,10 @@ program define _02_pscore
 
 		/*
 		The RV controls are going to be
-		1- applying to the program
-		2- being in the bandwidth
-		3- the RV in the bandwidth
-		4- the RV in the bandwidth + being above the cutoff
+		1- Applying to the program
+		2- Being in the bandwidth
+		3- The RV in the bandwidth
+		4- The RV in the bandwidth + being above the cutoff
 		*/
 
 		// RV Control 1
