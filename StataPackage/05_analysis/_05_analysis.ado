@@ -12,19 +12,19 @@ program define _05_analysis
 		foreach t of varlist treatment* {
 			egen int pindex_`t' = group(pscore_`t')
 			local pdummy_`t' i.pindex_`t'
-		}
+			}
 			
-		// 1.2 Tag "good cells" (not 0 or 1 --> 1)
+		// 1.2 Tag "good cells" (1 if not 0 or 1)
 		foreach t of varlist treatment* {
 			gen good_`t' = !inlist(pscore_`t', 1, 0)
-		}
+			}
 		
 		// 1.3. pscore dummies
 		local pdummy_multi
 		
 		foreach t of varlist treatment* {
 			local pdummy_multi `pdummy_multi' `pdummy_`t''
-		}
+			}
 		
 	* 2. Set controls (covariates & running variable control)
 	
@@ -74,15 +74,15 @@ program define _05_analysis
 					}
 					dis as text "After year interaction loop, controls are: `controls_mod'"
 				local controls `controls_mod'
+				}
 			}
-		}
 		
 	* 3. Rename back
 		
 		// Outcome, Enrollment
 		if $out_con_length > 0{
 			rename (Outcome_con*) ($user_Outcome_con)
-		}
+			}
 		
 		local user_outcomes $user_Outcome_con
 		// Local user_enrolls $user_Enrollment*
@@ -226,7 +226,7 @@ program define _05_analysis
 			ivreg2 `cov' i.Assign_x_Treat `pdummy_multi' `control_run', robust partial(`pdummy_multi' `control_run')
 			testparm i.Assign_x_Treat
 			estimates store `cov'
-		}
+			}
 		
 		// Output tables
 		esttab `covlist' using balance.tex, replace booktabs /*
@@ -288,7 +288,7 @@ program define _05_analysis
 		foreach out of varlist `user_outcomes' {
 			ivreg2 `out' (i.Enroll_x_Treat = i.Assign_x_Treat) `pdummy_multi' `covlist' `control_run', robust partial(`pdummy_multi' `covlist' `control_run')
 			estimates store `out'
-		}
+			}
 		
 		// Output tables
 

@@ -336,9 +336,9 @@ program define _02_pscore
 		// Non-degenerate better set risk
 		sort StudentID ChoiceRank
 		// Only consider the lagged cutoff if applicant is t_c at that lottery school.
-		by StudentID: gen lagged_lottery_cutoff = DefaultCutoff[_n-1 ] * t_c[_n-1] * (NonLottery[_n-1] == 0)
-
-		by StudentID: replace mid = max(mid[_n-1], lagged_lottery_cutoff)  if (sometimes_get_more_preferred == 1)
+		by StudentID: gen lagged_lottery_cutoff = DefaultCutoff[_n-1] * t_c[_n-1] * (NonLottery[_n-1] == 0)
+		by StudentID: replace mid = max(mid[_n-1], lagged_lottery_cutoff) if (sometimes_get_more_preferred == 1)
+		
 		// Replace first lottery choice to zero.
 		by StudentID: replace mid = 0 if (_n == 1)
 
@@ -355,8 +355,8 @@ program define _02_pscore
 
 		// Local score with single non-stochastic tie-breaking
 		gen double pscore_rank = 0 if (NonLottery == 1) & (t_n == 1 | ever_seated_more_preferred == 1)
-		replace pscore_rank = 1 if (NonLottery == 1) & (t_a == 1 &  ever_seated_more_preferred == 0)
-		replace pscore_rank = 0.5 if (NonLottery == 1) & (t_c == 1 &  ever_seated_more_preferred == 0)
+		replace pscore_rank = 1 if (NonLottery == 1) & (t_a == 1 & ever_seated_more_preferred == 0)
+		replace pscore_rank = 0.5 if (NonLottery == 1) & (t_c == 1 & ever_seated_more_preferred == 0)
 
 		// Solve running count problem (little m)
 		// We need to know how many times an applicant has pscore_rank == 0.5 at more preferred screened schools.
@@ -384,30 +384,20 @@ program define _02_pscore
 
 		*	Better set risk only
 			replace pscore = 1 if (t_a == 1) & (ever_seated_more_preferred == 0)
-			replace pscore =  lambda * 0.5^(number_of_bw) ///
+			replace pscore = lambda * 0.5^(number_of_bw) ///
 				if (t_a == 1) & (ever_seated_more_preferred == 0)
 
 		*	Lottery school with risk at s
-			replace pscore =  lambda * 0.5^(number_of_bw) * max(0, (DefaultCutoff - mid) / one_minus_mid) ///
+			replace pscore = lambda * 0.5^(number_of_bw) * max(0, (DefaultCutoff - mid) / one_minus_mid) ///
 				if (t_c == 1) & (ever_seated_more_preferred == 0) & (NonLottery == 0)
 
 		*	Screened school with risk at s
-			replace pscore =  lambda * 0.5^(number_of_bw) * pscore_rank ///
+			replace pscore = lambda * 0.5^(number_of_bw) * pscore_rank ///
 				if (t_c == 1) & (ever_seated_more_preferred == 0) & (NonLottery == 1)
 
 			count if pscore == .
 			assert `r(N)' ==  0
 
-		// Compute frequency score
-		bys SchoolID mid t_a t_c t_n : egen double pscore_frequency = mean(Assignment)
-
-		// For applicants who are in t_n, MID doesn't matter.
-		bys SchoolID t_n: egen double frequency_offer_intermediate = mean(Assignment)
-		replace pscore_frequency = frequency_offer_intermediate if (t_n == 1)
-		drop frequency_offer_intermediate
-
-		// Generate indicator for offer if pscore was 0
-		bys StudentID : egen ever_0_got_offer = max(Assignment == 1 & pscore == 0)
 		compress
 		
 		// Save tempfiles
@@ -418,9 +408,6 @@ program define _02_pscore
 
 	* 7. Create running variable control
 	preserve
-		* Settings
-		set trace off
-		set tracedepth 1
 
 		use `pscore_`year'_`grade''
 
@@ -436,7 +423,7 @@ program define _02_pscore
 		*/
 
 		// RV Control 1
-		gen byte rv_app_  = 1
+		gen byte rv_app_ = 1
 
 		// RV Control 2
 		gen byte rv_in_bw_ = (t_c == 1) & (rv_app_ == 1)

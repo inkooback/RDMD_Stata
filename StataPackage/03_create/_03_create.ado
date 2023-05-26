@@ -11,7 +11,7 @@ program define _03_create
 	levelsof Treatment, local(treatset)
 	foreach t of local treatset {
 		gen treatment_`t' = (Treatment == `t')
-	}
+		}
 		
 	// Categorical covariates into dummies
 	foreach cat of varlist Covariate_cat* {
@@ -25,9 +25,9 @@ program define _03_create
 	// pscore to each treated schools 
 	foreach t of varlist treatment*{
 		gen pscore_`t' = pscore * `t'
- 	}
+		}
 	
-	// generate D_i and C_i
+	// Generate D_i and C_i
 	gen Assign_x_Treat = Assignment * Treatment
 	gen Enroll_x_Treat = Enrollment * Treatment
 	
