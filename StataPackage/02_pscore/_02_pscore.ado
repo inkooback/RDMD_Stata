@@ -41,7 +41,7 @@ program define _02_pscore
 	// Keep original rank
 	gen rank_mod_no_rescale = rank
 	
-	// Rescale marginal group for non-lottery tie-breakers
+	// Rescale marginal group for the tie-breakers (lottery / non-lottery)
 	replace rank = (rank_mod_no_rescale - runvar_min + 1) / (runvar_max -  runvar_min + 1) if (Marginal == 1)
 	
 	// Non-marginal applicants
@@ -148,13 +148,13 @@ program define _02_pscore
 		5 applicants on either side of the cutoff within the bandwidth, and then recalculate whether an applicant is in the bandwidth */
 
 	// Generate indicator for being in the bandwidth
-	gen in_bw =  (Centered > -bw) &  (Centered <= bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
+	gen in_bw = (Centered > -bw) &  (Centered <= bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
 
 	// Generate indicator for being below the bandwidth
-	gen below_bw =  (Centered <= -bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
+	gen below_bw = (Centered <= -bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
 	
 	// Generate indicator for being above the bandwidth
-	gen above_bw =  (Centered > bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
+	gen above_bw = (Centered > bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
 
 	// Generate check that each applicant is at max in/below/above the bandwidth
 	egen check = rowtotal(in_bw below_bw above_bw) if (Marginal == 1) & (NonLottery == 1) & !missing(bw)
@@ -226,13 +226,13 @@ program define _02_pscore
 	drop in_bw below_bw above_bw
 	
 	// Generate indicator for being in the bandwidth
-	gen in_bw =  (Centered > -bw) &  (Centered <= bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
+	gen in_bw = (Centered > -bw) &  (Centered <= bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
 
 	// Generate indicator for being below the bandwidth
-	gen below_bw =  (Centered <= -bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
+	gen below_bw = (Centered <= -bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
 	
 	// Generate indicator for being above the bandwidth
-	gen above_bw =  (Centered > bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
+	gen above_bw = (Centered > bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
 
 	// Check
 	egen check = rowtotal(in_bw below_bw above_bw) if (Marginal == 1) & (NonLottery == 1) & !missing(bw)
@@ -243,7 +243,7 @@ program define _02_pscore
 	// Re-tag if the program has a bandwidth (tags screened programs)
 	replace has_bw = bw != .
 **********************************************************************************************************************************
-	*==========================================================================================================================================================================
+*=================================================================================================================================
 		
 	* 4. Calculate T
 
@@ -275,7 +275,7 @@ program define _02_pscore
 	assert `r(min)' == 1 & `r(max)' == 1
 	drop check
 
-*======================================================================================================================
+*=================================================================================================================================
 	
 	* 5. Calculate MID
 
@@ -355,8 +355,8 @@ program define _02_pscore
 
 		// Local score with single non-stochastic tie-breaking
 		gen double pscore_rank = 0 if (NonLottery == 1) & (t_n == 1 | ever_seated_more_preferred == 1)
-		replace pscore_rank = 1 if (NonLottery == 1) & (t_a == 1 & ever_seated_more_preferred == 0)
-		replace pscore_rank = 0.5 if (NonLottery == 1) & (t_c == 1 & ever_seated_more_preferred == 0)
+		replace pscore_rank = 1    if (NonLottery == 1) & (t_a == 1 & ever_seated_more_preferred == 0)
+		replace pscore_rank = 0.5  if (NonLottery == 1) & (t_c == 1 & ever_seated_more_preferred == 0)
 
 		// Solve running count problem (little m)
 		// We need to know how many times an applicant has pscore_rank == 0.5 at more preferred screened schools.
@@ -447,7 +447,7 @@ program define _02_pscore
 		reshape wide rv_in_bw_ rv_cen_ rv_above_ rv_app_ quad_ quad_above_, i(StudentID) j(SchoolID)
 		
 		// Keep relevant variables
-		keep StudentID rv_* quad_*
+		keep StudentID rv_*
 		duplicates drop
 		isid StudentID
 
