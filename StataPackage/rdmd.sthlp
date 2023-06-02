@@ -166,13 +166,17 @@ The values in the table represents the regression coefficients of each covariate
 
 {p 4 8} Results of the 2SLS regression of {cmd:Outcomes} on {cmd:Enrollment at treated schools} dummies using {cmd:Assignment at treated schools} dummies as an instrument for {cmd:Enrollment at treated schools} dummies. The analysis controls for local propensity score control and includes local piecewise linear control for screened tie-breakers.{p_end}
 
-{p 4 8} Output files: 2sls.tex, 2sls.csv {p_end}
+{p 4 8} {cmd: Output files} {p_end}
+{p 8 8}{cmd: Multi-sector analysis:} multi_sector_2SLS.tex, multi_sector_2SLS.csv  {p_end}
+{p 8 8}{cmd: Analysis for each treatment dummy:} treatment_x_2SLS.tex, treatment_x_2SLS.csv {it: for each treatment value x} {p_end}
 
 
 {dlgtab:OLS}
 {p 4 8} Results of the OLS regression of {cmd:Outcomes} on {cmd:Enrollment at treated schools} dummies {p_end}
 
-{p 4 8} Output files: ols.tex, ols.csv {p_end}
+{p 4 8} {cmd: Output files} {p_end}
+{p 8 8}{cmd: Multi-sector analysis:} multi_sector_OLS.tex, multi_sector_OLS.csv  {p_end}
+{p 8 8}{cmd: Analysis for each treatment dummy:} treatment_x_OLS.tex, treatment_x_OLS.csv {it: for each treatment value x} {p_end}
 
     {hline}
 

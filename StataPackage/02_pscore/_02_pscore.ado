@@ -33,7 +33,7 @@ program define _02_pscore
 	sum rank
 	replace rank = r(max) * 1000 if indi_missing_rank_mod == 1
 
-	// Rescale running variables to (0, 1], as described in the paper (p. 134)
+	// Rescale running variables to (0, 1], as described in the paper (Breaking Ties p. 134)
 	// Notice that we do that within the marginal group only
 	bys DefaultTiebreakerIndex : egen runvar_max = max(rank) if (Marginal == 1 & indi_missing_rank_mod == 0)
 	bys DefaultTiebreakerIndex : egen runvar_min = min(rank) if (Marginal == 1 & indi_missing_rank_mod == 0)
@@ -452,7 +452,7 @@ program define _02_pscore
 		isid StudentID
 
 		compress
-		
+	
 		save "runvar_control_`year'_`grade'.dta", replace
 	restore
 end

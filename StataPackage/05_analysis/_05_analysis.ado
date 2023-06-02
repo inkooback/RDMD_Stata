@@ -53,7 +53,7 @@ program define _05_analysis
 				}	
 				
 			// rv controls (categorical)
-			foreach run of varlist rv_app* {
+			foreach run of varlist rv_* {
 				local control_run `control_run' `run'
 				}
 				
@@ -61,18 +61,18 @@ program define _05_analysis
 			local controls `controls' `control_cov'
 			local controls `controls' `control_run'
 			
-			// Interact if controls local is non-empty
+			// Interact if the `controls' local macro is non-empty
 			if "`controls'" != "" {
 				// Local controls Year##(`controls')
-					di in red "In controls, controls are: `controls'"
-					local controls_mod
-					local len = wordcount("`controls'")
-					forval i = 1 / `len'  {
-						local var = word("`controls'", `i')
-						dis "`var'"
-						local controls_mod `controls_mod' Year##`var'
+				di in red "In controls, controls are: `controls'"
+				local controls_mod
+				local len = wordcount("`controls'")
+				forval i = 1 / `len'  {
+					local var = word("`controls'", `i')
+					di "`var'"
+					local controls_mod `controls_mod' Year##`var'
 					}
-					dis as text "After year interaction loop, controls are: `controls_mod'"
+				di as text "After year interaction loop, controls are: `controls_mod'"
 				local controls `controls_mod'
 				}
 			}
@@ -111,6 +111,10 @@ program define _05_analysis
 	// erase "stacked.dta"
 	
 	* 4. Analysis
+	
+	// Set directory
+	mkdir results
+	cd results
 	
 	// 4.1. Raw balance / OLS regression
 	
@@ -169,17 +173,66 @@ program define _05_analysis
 		
 	// 4.1.2. OLS
 		
+		*********** Analysis for each treatment dummy ***********
+			
+		// Enroll_x_Treat into dummies
+		levelsof Enroll_x_Treat, local(extset)
+		foreach t of local extset {
+			gen enroll_treatment_`t' = (Enroll_x_Treat == `t')
+			}
+		
+		foreach t of varlist treatment_* {
+			local treat  = "`t'"
+			dis "`treat'"
+			foreach out of varlist `user_outcomes' {
+				ivreg2 `out' enroll_`t'
+				estimates store `out'
+				}
+			
+			// Output tables
+			esttab `user_outcomes' using `treat'_OLS.tex, replace booktabs /*
+			*/ title(OLS\label{tab1}) stats(N, fmt(a3)) style(tab) nonumbers /*
+			*/ cells(b(star fmt(%9.3f)) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01) nodepvars
+			
+			mat rename r(coefs) ols, replace
+			mat list ols
+			scalar r = rowsof(ols)
+			
+			// N
+			mat D = J(r, 1, _N)
+			mat colnames D = N
+			mat ols = ols, D
+			
+			// Number of types
+			qui unique Type
+			scalar t = `r(sum)'
+			mat E = J(r, 1, t)
+			mat colnames E = Types
+			mat ols = ols, E
+			
+			// Number of pscores
+			qui unique pscore_`treat'
+			scalar t = `r(sum)'
+			mat F = J(r, 1, t)
+			mat colnames F = Number_of_pscores
+			mat ols = ols, F
+
+			esttab matrix(ols, transpose) using `treat'_OLS.tex, replace      // Final Table
+			esttab matrix(ols, transpose) using `treat'_OLS.csv, csv replace  // Final Table
+			}
+		
+		*********** Multisector analysis ***********
 		foreach out of varlist `user_outcomes' {
 			ivreg2 `out' i.Enroll_x_Treat
 			estimates store `out'
 			}
 		
 		// Output tables
-		esttab `user_outcomes' using OLS.tex, replace booktabs /*
+		esttab `user_outcomes' using multi_sector_OLS.tex, replace booktabs /*
 		*/ title(OLS\label{tab1}) stats(N, fmt(a3)) style(tab) nonumbers /*
 		*/ cells(b(star fmt(%9.3f)) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01) nodepvars
 		
-		mat rename r(coefs) ols
+		mat rename r(coefs) ols, replace
 		mat list ols
 		scalar r = rowsof(ols)
 		
@@ -210,8 +263,8 @@ program define _05_analysis
 		mat list ols
 		mat ols = ols[2..r-1,1...]
 
-		esttab matrix(ols, transpose) using ols.tex, replace //Final Table
-		esttab matrix(ols, transpose) using ols.csv, csv replace //Final Table
+		esttab matrix(ols, transpose) using multi_sector_OLS.tex, replace      // Final Table
+		esttab matrix(ols, transpose) using multi_sector_OLS.csv, csv replace  // Final Table
 		
 	
 	// 4.2. Control balance / 2SLS regression
@@ -276,14 +329,64 @@ program define _05_analysis
 		mat F_test = raw_stats\control_stats
 		
 		// Print F-test
-		esttab matrix(F_test) using f_test.tex, replace  //Final Table
-		esttab matrix(F_test) using f_test.csv, csv replace //Final Table
+		esttab matrix(F_test) using F_test.tex, replace      // Final Table
+		esttab matrix(F_test) using F_test.csv, csv replace  // Final Table
 		
 		// Add OLS / 2SLS header and print out
 		esttab matrix(Balance, transpose) using balance.tex, replace mtitle("\textbf{Left half: Uncontrolled. Right half: Controlled}") //Final Table
 		esttab matrix(Balance, transpose) using balance.csv, csv replace //Final Table
 		
 		// 4.2.2. 2SLS regression
+		
+		*********** Analysis for each treatment dummy ***********
+		
+		// Assign_x_Treat into dummies
+		levelsof Assign_x_Treat, local(axtset)
+		foreach t of local axtset {
+			gen assign_treatment_`t' = (Assign_x_Treat == `t')
+			}
+		
+		foreach t of varlist treatment_* {
+			local treat  = "`t'"
+			dis "`treat'"
+			foreach out of varlist `user_outcomes' {
+				ivreg2 `out' (enroll_`t' = assign_`t') `pdummy_multi' `covlist' `control_run', robust partial(`pdummy_multi' `covlist' `control_run')
+				estimates store `out'
+				}
+			
+			// Output tables
+			esttab `user_outcomes' using multi_sector_2SLS.tex, replace booktabs /*
+			*/ title(2SLS\label{tab1}) stats(N, fmt(a3)) style(tab) nonumbers /*
+			*/ cells(b(star fmt(%9.3f)) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01) nodepvars
+			
+			mat rename r(coefs) two_sls, replace
+			mat list two_sls
+			scalar r = rowsof(two_sls)
+			
+			// N
+			mat D = J(r, 1, _N)
+			mat colnames D = N
+			mat two_sls = two_sls, D
+			
+			// Number of types
+			qui unique Type
+			scalar t = `r(sum)'
+			mat E = J(r, 1, t)
+			mat colnames E = Types
+			mat two_sls = two_sls, E
+			
+			// Number of pscores
+			qui unique pscore_`treat'
+			scalar t = `r(sum)'
+			mat F = J(r, 1, t)
+			mat colnames F = Number_of_pscores
+			mat two_sls = two_sls, F
+
+			esttab matrix(two_sls, transpose) using `treat'_2SLS.tex, replace      // Final Table
+			esttab matrix(two_sls, transpose) using `treat'_2SLS.csv, csv replace  // Final Table
+			}
+		
+		*********** Multisector analysis ***********
 	
 		foreach out of varlist `user_outcomes' {
 			ivreg2 `out' (i.Enroll_x_Treat = i.Assign_x_Treat) `pdummy_multi' `covlist' `control_run', robust partial(`pdummy_multi' `covlist' `control_run')
@@ -292,11 +395,11 @@ program define _05_analysis
 		
 		// Output tables
 
-		esttab `user_outcomes' using 2SLS.tex, replace booktabs /*
+		esttab `user_outcomes' using multi_sector_2SLS.tex, replace booktabs /*
 		*/ title(2SLS\label{tab1}) stats(N, fmt(a3)) style(tab) nonumbers /*
 		*/ cells(b(star fmt(%9.3f)) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01) nodepvars
 		
-		mat rename r(coefs) two_sls
+		mat rename r(coefs) two_sls, replace
 		mat list two_sls
 		scalar r = rowsof(two_sls)
 		
@@ -326,8 +429,8 @@ program define _05_analysis
 		mat two_sls = two_sls, F
 		mat list two_sls
 
-		esttab matrix(two_sls, transpose) using 2sls.tex, replace //Final Table
-		esttab matrix(two_sls, transpose) using 2sls.csv, csv replace //Final Table
+		esttab matrix(two_sls, transpose) using multi_sector_2SLS.tex, replace      // Final Table
+		esttab matrix(two_sls, transpose) using multi_sector_2SLS.csv, csv replace  // Final Table
 		
 	restore
 	
