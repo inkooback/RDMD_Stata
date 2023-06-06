@@ -18,6 +18,8 @@ program define _05_analysis
 		foreach t of varlist treatment* {
 			gen good_`t' = !inlist(pscore_`t', 1, 0)
 			}
+		// Number of sectors with risk	
+		egen risk = rowtotal(good_*)
 		
 		// 1.3. pscore dummies
 		local pdummy_multi
@@ -222,56 +224,61 @@ program define _05_analysis
 			}
 		
 		*********** Multisector analysis ***********
-		foreach out of varlist `user_outcomes' {
-			ivreg2 `out' i.Enroll_x_Treat
-			estimates store `out'
-			}
-		
-		// Output tables
-		esttab `user_outcomes' using multi_sector_OLS.tex, replace booktabs /*
-		*/ title(OLS\label{tab1}) stats(N, fmt(a3)) style(tab) nonumbers /*
-		*/ cells(b(star fmt(%9.3f)) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01) nodepvars
-		
-		mat rename r(coefs) ols, replace
-		mat list ols
-		scalar r = rowsof(ols)
-		
-		// N
-		mat D = J(r, 1, _N)
-		mat colnames D = N
-		mat ols = ols, D
-		
-		// Number of types
-		qui unique Type
-		scalar t = `r(sum)'
-		mat E = J(r, 1, t)
-		mat colnames E = Types
-		mat ols = ols, E
-		
-		// Number of pscores
-		mat F = (.)
-		foreach t of varlist treatment* {
-			qui unique pscore_`t'
-			dis "Propensity scores for `t' have `r(sum)' unique values."
-			mat F = F \ `r(sum)'
-			}
-		mat F = F \ 1
-		mat F = F[2..., 1...]
-		
-		mat colnames F = Number_of_pscores
-		mat ols = ols, F
-		mat list ols
-		mat ols = ols[2..r-1,1...]
+		// Conduct multi-sector analysis only when there are more than two treatment values
+		ds treatment*
+		scalar length = `:word count `r(varlist)''
+		if length > 2 {
+			
+			foreach out of varlist `user_outcomes' {
+				ivreg2 `out' i.Enroll_x_Treat
+				estimates store `out'
+				}
+			
+			// Output tables
+			esttab `user_outcomes' using multi_sector_OLS.tex, replace booktabs /*
+			*/ title(OLS\label{tab1}) stats(N, fmt(a3)) style(tab) nonumbers /*
+			*/ cells(b(star fmt(%9.3f)) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01) nodepvars
+			
+			mat rename r(coefs) ols, replace
+			mat list ols
+			scalar r = rowsof(ols)
+			
+			// N
+			mat D = J(r, 1, _N)
+			mat colnames D = N
+			mat ols = ols, D
+			
+			// Number of types
+			qui unique Type
+			scalar t = `r(sum)'
+			mat E = J(r, 1, t)
+			mat colnames E = Types
+			mat ols = ols, E
+			
+			// Number of pscores
+			mat F = (.)
+			foreach t of varlist treatment* {
+				qui unique pscore_`t'
+				dis "Propensity scores for `t' have `r(sum)' unique values."
+				mat F = F \ `r(sum)'
+				}
+			mat F = F \ 1
+			mat F = F[2..., 1...]
+			
+			mat colnames F = Number_of_pscores
+			mat ols = ols, F
+			mat list ols
+			mat ols = ols[2..r-1,1...]
 
-		esttab matrix(ols, transpose) using multi_sector_OLS.tex, replace      // Final Table
-		esttab matrix(ols, transpose) using multi_sector_OLS.csv, csv replace  // Final Table
+			esttab matrix(ols, transpose) using multi_sector_OLS.tex, replace      // Final Table
+			esttab matrix(ols, transpose) using multi_sector_OLS.csv, csv replace  // Final Table
+			}
 		
 	
 	// 4.2. Control balance / 2SLS regression
 	
 	// Limit the sample to applicants with risk at at least 1 sector. 
 	preserve
-		egen risk = rowtotal(good_*)
 		keep if (risk > 0)
 
 		// 4.2.1. Control balance
@@ -335,6 +342,7 @@ program define _05_analysis
 		// Add OLS / 2SLS header and print out
 		esttab matrix(Balance, transpose) using balance.tex, replace mtitle("\textbf{Left half: Uncontrolled. Right half: Controlled}") //Final Table
 		esttab matrix(Balance, transpose) using balance.csv, csv replace //Final Table
+	restore
 		
 		// 4.2.2. 2SLS regression
 		
@@ -347,14 +355,64 @@ program define _05_analysis
 			}
 		
 		foreach t of varlist treatment_* {
-			local treat  = "`t'"
-			dis "`treat'"
+			preserve
+				keep if (good_`t' == 1)
+				local treat  = "`t'"
+				dis "`treat'"
+				foreach out of varlist `user_outcomes' {
+					ivreg2 `out' (enroll_`t' = assign_`t') `pdummy_multi' `covlist' `control_run', robust partial(`pdummy_multi' `covlist' `control_run')
+					estimates store `out'
+					}
+				
+				// Output tables
+				esttab `user_outcomes' using multi_sector_2SLS.tex, replace booktabs /*
+				*/ title(2SLS\label{tab1}) stats(N, fmt(a3)) style(tab) nonumbers /*
+				*/ cells(b(star fmt(%9.3f)) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01) nodepvars
+				
+				mat rename r(coefs) two_sls, replace
+				mat list two_sls
+				scalar r = rowsof(two_sls)
+				
+				// N
+				mat D = J(r, 1, _N)
+				mat colnames D = N
+				mat two_sls = two_sls, D
+				
+				// Number of types
+				qui unique Type
+				scalar t = `r(sum)'
+				mat E = J(r, 1, t)
+				mat colnames E = Types
+				mat two_sls = two_sls, E
+				
+				// Number of pscores
+				qui unique pscore_`treat'
+				scalar t = `r(sum)'
+				mat F = J(r, 1, t)
+				mat colnames F = Number_of_pscores
+				mat two_sls = two_sls, F
+
+				esttab matrix(two_sls, transpose) using `treat'_2SLS.tex, replace      // Final Table
+				esttab matrix(two_sls, transpose) using `treat'_2SLS.csv, csv replace  // Final Table
+			restore
+			}
+			
+			
+		*********** Multisector analysis ***********
+		
+	// Conduct multi-sector analysis only when there are more than two treatment values
+	if length > 2 {
+	
+		preserve
+			keep if (risk > 0)
+			
 			foreach out of varlist `user_outcomes' {
-				ivreg2 `out' (enroll_`t' = assign_`t') `pdummy_multi' `covlist' `control_run', robust partial(`pdummy_multi' `covlist' `control_run')
+				ivreg2 `out' (i.Enroll_x_Treat = i.Assign_x_Treat) `pdummy_multi' `covlist' `control_run', robust partial(`pdummy_multi' `covlist' `control_run')
 				estimates store `out'
 				}
 			
 			// Output tables
+
 			esttab `user_outcomes' using multi_sector_2SLS.tex, replace booktabs /*
 			*/ title(2SLS\label{tab1}) stats(N, fmt(a3)) style(tab) nonumbers /*
 			*/ cells(b(star fmt(%9.3f)) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01) nodepvars
@@ -376,63 +434,24 @@ program define _05_analysis
 			mat two_sls = two_sls, E
 			
 			// Number of pscores
-			qui unique pscore_`treat'
-			scalar t = `r(sum)'
-			mat F = J(r, 1, t)
+			mat F = (.)
+			foreach t of varlist treatment* {
+				qui unique pscore_`t'
+				dis "Propensity scores for `t' have `r(sum)' unique values."
+				mat F = F \ `r(sum)'
+				}
+			mat F = F \ 1
+			mat F = F[2..r+1,1...]
+			
 			mat colnames F = Number_of_pscores
 			mat two_sls = two_sls, F
+			mat list two_sls
 
-			esttab matrix(two_sls, transpose) using `treat'_2SLS.tex, replace      // Final Table
-			esttab matrix(two_sls, transpose) using `treat'_2SLS.csv, csv replace  // Final Table
-			}
-		
-		*********** Multisector analysis ***********
-	
-		foreach out of varlist `user_outcomes' {
-			ivreg2 `out' (i.Enroll_x_Treat = i.Assign_x_Treat) `pdummy_multi' `covlist' `control_run', robust partial(`pdummy_multi' `covlist' `control_run')
-			estimates store `out'
-			}
-		
-		// Output tables
-
-		esttab `user_outcomes' using multi_sector_2SLS.tex, replace booktabs /*
-		*/ title(2SLS\label{tab1}) stats(N, fmt(a3)) style(tab) nonumbers /*
-		*/ cells(b(star fmt(%9.3f)) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01) nodepvars
-		
-		mat rename r(coefs) two_sls, replace
-		mat list two_sls
-		scalar r = rowsof(two_sls)
-		
-		// N
-		mat D = J(r, 1, _N)
-		mat colnames D = N
-		mat two_sls = two_sls, D
-		
-		// Number of types
-		qui unique Type
-		scalar t = `r(sum)'
-		mat E = J(r, 1, t)
-		mat colnames E = Types
-		mat two_sls = two_sls, E
-		
-		// Number of pscores
-		mat F = (.)
-		foreach t of varlist treatment* {
-			qui unique pscore_`t'
-			dis "Propensity scores for `t' have `r(sum)' unique values."
-			mat F = F \ `r(sum)'
-			}
-		mat F = F \ 1
-		mat F = F[2..r+1,1...]
-		
-		mat colnames F = Number_of_pscores
-		mat two_sls = two_sls, F
-		mat list two_sls
-
-		esttab matrix(two_sls, transpose) using multi_sector_2SLS.tex, replace      // Final Table
-		esttab matrix(two_sls, transpose) using multi_sector_2SLS.csv, csv replace  // Final Table
-		
-	restore
+			esttab matrix(two_sls, transpose) using multi_sector_2SLS.tex, replace      // Final Table
+			esttab matrix(two_sls, transpose) using multi_sector_2SLS.csv, csv replace  // Final Table
+			
+		restore
+		}
 	
 	// Rename back to user's variable names
 	rename (StudentID Year Grade) ($user_StudentID $user_Year $user_Grade)

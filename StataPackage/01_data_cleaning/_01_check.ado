@@ -359,9 +359,17 @@ program define _01_check
 	qui unique Treatment
 	if `r(sum)' < 2{
 				di as error "At least 2 $user_Treatment value is needed."
-			}
-			
-	* 15 Advantage not in the proper range
+				}
+
+	* 15 No 0 in Treatment
+	gen Treatment_abs = abs(Treatment)
+	qui sum Treatment_abs
+	if `r(min)' > 0{
+				di as error "No 0 (contol) in Treatment. Control group is required."
+				}		
+	drop Treatment_abs
+	
+	* 16 Advantage not in the proper range
 	qui sum Advantage
 	if `r(min)' == 0{
 				di as error "Advantage must be in the range (0,1]."

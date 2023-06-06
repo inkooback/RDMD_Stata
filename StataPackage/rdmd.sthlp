@@ -96,7 +96,7 @@
 {p2coldent:* {cmd:Grade}}Grade the applicant is in. This variable stores integer type data.{p_end}
 {synopt :{cmd:Choice Rank}}Choice rank of the school to which the applicant applied. For example, if the school is the applicant's first choice, choice rank would be 1. This variable stores integer type data.{p_end}
 {synopt :{cmd:School ID}}Unique identification code assigned to each school. This variable stores string type data.{p_end}
-{synopt :{cmd:Treatment}}Treatment on the school. 0 = untreated schools. 1,2,3,... for the treated schools. This variable stores integer type data.{p_end}
+{synopt :{cmd:Treatment}}Treatment on the school. 0 = untreated (control) schools. 1,2,3,... for the treated schools. If this variable has more than two different values (including 0), multi-sector analysis will be conducted along with the analyses for each treatment dummies. This variable stores integer type data.{p_end}
 {synopt :{cmd:Capacity}}Capacity of the program of the corresponding year and grade. This variable stores integer type data.{p_end}
 {synopt :{cmd:Priority}}Priority the applicant is granted at the school. A lower number corresponds to a higher priority, with 0 indicating a guaranteed acceptance. This variable stores integer type data.{p_end}
 {synopt :{cmd:Default Tie-breaker Index}}Tie-breaker index the applicant has at the school. This variable stores integer type data.{p_end}
@@ -137,29 +137,30 @@
 {synopt :{cmd:12}}Abnormally large value found in a column that is unlikely to have a huge outlier{p_end}
 {synopt :{cmd:13}}A school uses non-lottery tie-breaker, and correlation between Priority and Tie-breaker within the school approximates 1{p_end}
 {synopt :{cmd:14}}No variation in treatment{p_end}
-{synopt :{cmd:15}}Advantage not in the range (0,1]{p_end}
+{synopt :{cmd:15}}No 0 (control) in treatment{p_end}
+{synopt :{cmd:16}}Advantage not in the range (0,1]{p_end}
 {synoptline}
 	
 
 {marker outputs}{...}
 {title:Outputs}
 
-{p 4 8}{cmd:rdmd} generates four tables in both LaTeX and csv formats.{p_end}
+{p 4 8}{cmd:rdmd} generates four kinds of tables in both LaTeX and csv formats.{p_end}
 
 {dlgtab:Balance}
 
 {p 4 8}Balance regression results.{p_end}
 {p 4 8}
-The values in the table represents the regression coefficients of each covariate on the dummy variable indicating assignment to treated schools. The Left half of the table shows the results of the balance regression without including local propensity score control or local piecewise linear control for screened tie-breakers. The right half of the table shows the results of the balance regression including local propensity score control and local piecewise linear control for screened tie-breakers. For instance, if there are two types of treatment in the data, the first two columns represent uncontrolled balance regressions, while the last two columns represent controlled balance regressions.
+The values in the table represents the regression coefficients of each covariate on the dummy variable indicating assignment to treated schools. The Left half of the table shows the results of the balance regression without including local propensity score control or local piecewise linear control for screened tie-breakers. The right half of the table shows the results of the balance regression including local propensity score control and local piecewise linear control for screened tie-breakers. For instance, if there are two types of treatment in the data, the first two columns (on the left hand side) represent uncontrolled balance regressions, while the last two columns (on the right hand side) represent controlled balance regressions.
 {p_end}
 
-{p 4 8}Output files: balance.tex, balance.csv{p_end}
+{p 4 8} {cmd: Output files}: balance.tex, balance.csv{p_end}
 
 {dlgtab:F-test}
 
 {p 4 8} F-test results for each uncontrolled and controlled balance regressions.{p_end}
 
-{p 4 8} Output files: f_test.tex, f_test.csv{p_end}
+{p 4 8} {cmd: Output files}: f_test.tex, f_test.csv{p_end}
 
 										
 {dlgtab:2SLS}
@@ -167,7 +168,11 @@ The values in the table represents the regression coefficients of each covariate
 {p 4 8} Results of the 2SLS regression of {cmd:Outcomes} on {cmd:Enrollment at treated schools} dummies using {cmd:Assignment at treated schools} dummies as an instrument for {cmd:Enrollment at treated schools} dummies. The analysis controls for local propensity score control and includes local piecewise linear control for screened tie-breakers.{p_end}
 
 {p 4 8} {cmd: Output files} {p_end}
+
 {p 8 8}{cmd: Multi-sector analysis:} multi_sector_2SLS.tex, multi_sector_2SLS.csv  {p_end}
+
+{p 12 12}The multi-sector analysis is conducted only when there are more than two different treatment values in the data. The multi-sector estimates are from models that include separate endogenous variables for each treatment value. Instruments in this just-identified setup are dummies indicating offer to each sort of treated schools. 2SLS models include separate saturated local propensity score controls for each treatment. These multi-sector estimates are computed in a sample limited to applicants at risk of assignment to at least one sector.{p_end}
+
 {p 8 8}{cmd: Analysis for each treatment dummy:} treatment_x_2SLS.tex, treatment_x_2SLS.csv {it: for each treatment value x} {p_end}
 
 
@@ -175,7 +180,12 @@ The values in the table represents the regression coefficients of each covariate
 {p 4 8} Results of the OLS regression of {cmd:Outcomes} on {cmd:Enrollment at treated schools} dummies {p_end}
 
 {p 4 8} {cmd: Output files} {p_end}
+
+
 {p 8 8}{cmd: Multi-sector analysis:} multi_sector_OLS.tex, multi_sector_OLS.csv  {p_end}
+
+{p 12 12}The multi-sector analysis is conducted only when there are more than two different treatment values in the data. The multi-sector estimates are from models that include separate endogenous variables for each treatment value. Instruments in this just-identified setup are dummies indicating offer to each sort of treated schools. These multi-sector estimates are computed in a sample including all the applicants.{p_end}
+
 {p 8 8}{cmd: Analysis for each treatment dummy:} treatment_x_OLS.tex, treatment_x_OLS.csv {it: for each treatment value x} {p_end}
 
     {hline}
