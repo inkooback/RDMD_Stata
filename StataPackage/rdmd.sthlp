@@ -91,23 +91,23 @@
 {marker subcommand}{...}
 {synopthdr:Variables}
 {synoptline}
-{synopt :{cmd:Applicant ID}}Unique identification code assigned to each applicant. This variable stores string type data.{p_end}
-{p2coldent:* {cmd:Year}}Year the applicant is in. This variable stores integer type data.{p_end}
-{p2coldent:* {cmd:Grade}}Grade the applicant is in. This variable stores integer type data.{p_end}
-{synopt :{cmd:Choice Rank}}Choice rank of the school to which the applicant applied. For example, if the school is the applicant's first choice, choice rank would be 1. This variable stores integer type data.{p_end}
-{synopt :{cmd:School ID}}Unique identification code assigned to each school. This variable stores string type data.{p_end}
-{synopt :{cmd:Treatment}}Treatment on the school. 0 = untreated (control) schools. 1,2,3,... for the treated schools. If this variable has more than two different values (including 0), multi-sector analysis will be conducted along with the analyses for each treatment dummies. This variable stores integer type data.{p_end}
-{synopt :{cmd:Capacity}}Capacity of the program of the corresponding year and grade. This variable stores integer type data.{p_end}
-{synopt :{cmd:Priority}}Priority the applicant is granted at the school. A lower number corresponds to a higher priority, with 0 indicating a guaranteed acceptance. This variable stores integer type data.{p_end}
-{synopt :{cmd:Default Tie-breaker Index}}Tie-breaker index the applicant has at the school. This variable stores integer type data.{p_end}
-{p2coldent:* {cmd:Non-Lottery Index}}Index for the non-lottery schools. 0 for lottery schools, 1 for non-lottery schools. This variable stores binary type data.{p_end}
-{p2coldent:* {cmd:Tie-breaker Applicant Group Index}}Index for applicant groups. 0 for the default group. This variable stores integer type data.{p_end}
-{p2coldent:* {cmd:Advantage}}Applicants' tie-breaker values will be multiplied by the advantage. For example, If advantage is 0.7, the applicant's tie-breaker value will be multiplied by 0.7 at the school. Values should be in the range (0,1]. This variable stores float type data.{p_end}
-{synopt :{cmd:Default Tie-breaker}}Tie-breaker value of the student at the program. This variable stores float type data.{p_end}
-{synopt :{cmd:Assignment}}Assignment of the applicant at the school. 0 = not assigned. 1 = assigned.  This variable stores binary type data.{p_end}
-{synopt :{cmd:Enrollment}}Enrollment of the applicant at the school. 0 = not enrolled. 1 = enrolled. This variable stores binary type data.{p_end}
-{synopt :{cmd:Outcomes}}Outcome variables. These should be continuous variables. These variables may store float of integer type data.{p_end}
-{synopt :{cmd:Covariates}}Covariates. These can be either continuous or categorical variables. User will be asked to provide the list (parsed by space) of the categorical covariates and then continuous covariates. These variables may store float, integer, string, or binary type data.{p_end}
+{synopt :{cmd:Applicant ID}}Unique identification code assigned to each applicant. This variable stores {cmd:string} type data.{p_end}
+{p2coldent:* {cmd:Year}}Year the applicant is in. This variable stores {cmd:integer} type data.{p_end}
+{p2coldent:* {cmd:Grade}}Grade the applicant is in. This variable stores {cmd:integer} type data.{p_end}
+{synopt :{cmd:Choice Rank}}Choice rank of the school to which the applicant applied. For example, if the school is the applicant's first choice, choice rank would be 1. This variable stores {cmd:integer} type data.{p_end}
+{synopt :{cmd:School ID}}Unique identification code assigned to each school that the applicant applies to. Each applicant may apply to multiple schools, but an (Applicant ID, School ID) pair must uniquely define a row. This variable stores {cmd:string} type data.{p_end}
+{synopt: {cmd: Treatment}}Treatment of schools. 0 represents untreated (control) schools, while other integers or strings indicate treated schools. It is mandatory to have a control group (schools with {cmd: Treatment} = 0). If there is only one treatment group in the data, a multi-sector analysis will not be performed, and analyses will only be conducted for each treatment dummy. However, if there are multiple treatment groups, a multi-sector analysis will be carried out in addition to individual analyses for each treatment dummy. This variable stores data of type {cmd: integer} or {cmd: string}.{p_end}
+{synopt :{cmd:Capacity}}Capacity of the program of the corresponding year and grade. This variable stores {cmd:integer} type data.{p_end}
+{synopt :{cmd:Priority}}Priority the applicant is granted at the school. A lower number corresponds to a higher priority, with 0 indicating a guaranteed acceptance. This variable stores {cmd:integer} type data.{p_end}
+{synopt :{cmd:Default Tie-breaker Index}}Tie-breaker index the applicant has at the school. This variable stores {cmd:integer} type data.{p_end}
+{p2coldent:* {cmd:Non-Lottery Index}}Index for the non-lottery schools. 0 for lottery schools, 1 for non-lottery schools. This variable stores {cmd:binary} (0 or 1) type data.{p_end}
+{p2coldent:* {cmd:Tie-breaker Applicant Group Index}}Index for applicant groups. 0 for the default group. This variable stores {cmd:integer} type data.{p_end}
+{p2coldent:* {cmd:Advantage}}Applicants' tie-breaker values will be multiplied by the advantage. For example, If advantage is 0.7, the applicant's tie-breaker value will be multiplied by 0.7 at the school. Values should be in the range (0,1]. This variable stores {cmd:float} type data.{p_end}
+{synopt :{cmd:Default Tie-breaker}}Tie-breaker value of the student at the program. This variable stores {cmd:float} type data.{p_end}
+{synopt :{cmd:Assignment}}Assignment of the applicant at the school. 0 = not assigned. 1 = assigned.  This variable stores {cmd:binary} (0 or 1) type data.{p_end}
+{synopt :{cmd:Enrollment}}Enrollment of the applicant at the school. 0 = not enrolled. 1 = enrolled. This variable stores {cmd:binary} (0 or 1) type data.{p_end}
+{synopt :{cmd:Outcomes}}Outcome variables. These should be continuous variables. These variables may store float of {cmd:integer} type data.{p_end}
+{synopt :{cmd:Covariates}}Covariates. These can be either continuous or categorical variables. User will be asked to provide the list (parsed by space) of the categorical covariates and then continuous covariates. These variables may store {cmd:float}, {cmd:integer}, {cmd:string}, or {cmd:binary} (0 or 1) type data.{p_end}
 {synoptline}
 {p 4 8}* These five variables are optional if these concepts are irrelevant to the context user is working on or there is no variation in these variables. In such cases, if the user does not have these variables in the dataset, user can simply press enter when prompted to provide these variable names. The program will automatically generate a variable with a single value.{p_end}
 

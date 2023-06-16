@@ -361,11 +361,11 @@ program define _01_check
 				di as error "At least 2 $user_Treatment value is needed."
 				}
 
-	* 15 No 0 in Treatment
+	* 15 No control group (0) in Treatment
 	gen Treatment_abs = abs(Treatment)
 	qui sum Treatment_abs
 	if `r(min)' > 0{
-				di as error "No 0 (contol) in Treatment. Control group is required."
+				di as error "No 0 (contol group) in Treatment. Control group is required."
 				}		
 	drop Treatment_abs
 	

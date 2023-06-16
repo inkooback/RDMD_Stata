@@ -99,13 +99,13 @@ program define _02_pscore
 				* IK
 				if ("`bw_type'" == "IK") | ("`bw_type'" == "ik") {
 					noi cap: _02_rdob_mod2 `test' Centered if (NonLotteryID == `i') & (FullyRanked == 1) & (Marginal == 1), ck(5.40)
-					if _rc == 0 replace IK_`test' = `r(h_opt)' if NonLotteryID == `i'
+					if _rc == 0 replace `bw_type'_`test' = `r(h_opt)' if NonLotteryID == `i'
 					}
 				
 				* CCFT
 				else if ("`bw_type'" == "CCFT") | ("`bw_type'" == "ccft") {
 					noi cap: _02_rdbwselect `test' Centered if (NonLotteryID == `i') & (FullyRanked == 1) & (Marginal == 1), kernel(uniform) c(0)
-					if _rc == 0 replace CCFT_`test' = `e(h_mserd)' if NonLotteryID == `i'
+					if _rc == 0 replace `bw_type'_`test' = `e(h_mserd)' if NonLotteryID == `i'
 					}
 				
 				* else

@@ -28,16 +28,28 @@ program define _00_Master
 	
 	* Ask bandwidth criterion if not included in the option
 	if "`bwcriterion'"  == "0"{
-		* Receive bandwidth population criterion selection
+		// Receive bandwidth population criterion selection
 		dis "Choose bandwidth population criterion (integer). Press enter to set as default (5)" _request(bwcriterion)
-		// Throw an error if the input is not integer
-		if (mod($bwcriterion, 1) != 0){
-			while mod($bwcriterion, 1) != 0 {
-				dis as error "Must be integer"
-				dis "Choose bandwidth population criterion (integer). Press enter to set as default (5)" _request(bwcriterion)
+		
+		// User presses enter
+		if ("$bwcriterion" == ""){
+			dis "Bandwidths criterion set as 5"
+		}
+		
+		// User doesn't press enter but puts non-integer
+		else{
+			if (mod($bwcriterion, 1) != 0) {
+				while (mod($bwcriterion, 1) != 0) {
+					dis as error "Bandwidth population criterion must be an integer"
+					dis "Choose bandwidth population criterion (integer)" _request(bwcriterion)
+					}
 				}
 			}
 		}
+		
+		
+		// Throw an error if the input is not an integer
+		
 	
 	* At this point, global macros $bwtype and $bwcriterion are created (might be empty).
 	

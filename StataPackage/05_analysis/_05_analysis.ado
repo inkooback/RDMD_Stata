@@ -14,10 +14,13 @@ program define _05_analysis
 			local pdummy_`t' i.pindex_`t'
 			}
 			
-		// 1.2 Tag "good cells" (1 if not 0 or 1)
+		// 1.2 Tag "good cells" (1 if strictly between 0 and 1) for treated schools
 		foreach t of varlist treatment* {
-			gen good_`t' = !inlist(pscore_`t', 1, 0)
+			if "`t'" != "treatment_0"{
+				gen good_`t' = !inlist(pscore_`t', 1, 0)
+				}
 			}
+			
 		// Number of sectors with risk	
 		egen risk = rowtotal(good_*)
 		
@@ -275,13 +278,13 @@ program define _05_analysis
 			}
 		
 	
-	// 4.2. Control balance / 2SLS regression
+	// 4.2. Controlled balance / 2SLS regression
 	
 	// Limit the sample to applicants with risk at at least 1 sector. 
 	preserve
 		keep if (risk > 0)
 
-		// 4.2.1. Control balance
+		// 4.2.1. Controlled balance
 		foreach cov of local covlist {
 			ivreg2 `cov' i.Assign_x_Treat `pdummy_multi' `control_run', robust partial(`pdummy_multi' `control_run')
 			testparm i.Assign_x_Treat
@@ -356,44 +359,47 @@ program define _05_analysis
 		
 		foreach t of varlist treatment_* {
 			preserve
-				keep if (good_`t' == 1)
-				local treat  = "`t'"
-				dis "`treat'"
-				foreach out of varlist `user_outcomes' {
-					ivreg2 `out' (enroll_`t' = assign_`t') `pdummy_multi' `covlist' `control_run', robust partial(`pdummy_multi' `covlist' `control_run')
-					estimates store `out'
-					}
-				
-				// Output tables
-				esttab `user_outcomes' using multi_sector_2SLS.tex, replace booktabs /*
-				*/ title(2SLS\label{tab1}) stats(N, fmt(a3)) style(tab) nonumbers /*
-				*/ cells(b(star fmt(%9.3f)) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01) nodepvars
-				
-				mat rename r(coefs) two_sls, replace
-				mat list two_sls
-				scalar r = rowsof(two_sls)
-				
-				// N
-				mat D = J(r, 1, _N)
-				mat colnames D = N
-				mat two_sls = two_sls, D
-				
-				// Number of types
-				qui unique Type
-				scalar t = `r(sum)'
-				mat E = J(r, 1, t)
-				mat colnames E = Types
-				mat two_sls = two_sls, E
-				
-				// Number of pscores
-				qui unique pscore_`treat'
-				scalar t = `r(sum)'
-				mat F = J(r, 1, t)
-				mat colnames F = Number_of_pscores
-				mat two_sls = two_sls, F
+				* 6/9 Question (individual analysis for control group?)
+				if "`t'" != "treatment_0"{
+					keep if (good_`t' == 1)
+					local treat  = "`t'"
+					dis "`treat'"
+					foreach out of varlist `user_outcomes' {
+						ivreg2 `out' (enroll_`t' = assign_`t') `pdummy_multi' `covlist' `control_run', robust partial(`pdummy_multi' `covlist' `control_run')
+						estimates store `out'
+						}
+					
+					// Output tables
+					esttab `user_outcomes' using multi_sector_2SLS.tex, replace booktabs /*
+					*/ title(2SLS\label{tab1}) stats(N, fmt(a3)) style(tab) nonumbers /*
+					*/ cells(b(star fmt(%9.3f)) se(par)) starlevels(* 0.1 ** 0.05 *** 0.01) nodepvars
+					
+					mat rename r(coefs) two_sls, replace
+					mat list two_sls
+					scalar r = rowsof(two_sls)
+					
+					// N
+					mat D = J(r, 1, _N)
+					mat colnames D = N
+					mat two_sls = two_sls, D
+					
+					// Number of types
+					qui unique Type
+					scalar t = `r(sum)'
+					mat E = J(r, 1, t)
+					mat colnames E = Types
+					mat two_sls = two_sls, E
+					
+					// Number of pscores
+					qui unique pscore_`treat'
+					scalar t = `r(sum)'
+					mat F = J(r, 1, t)
+					mat colnames F = Number_of_pscores
+					mat two_sls = two_sls, F
 
-				esttab matrix(two_sls, transpose) using `treat'_2SLS.tex, replace      // Final Table
-				esttab matrix(two_sls, transpose) using `treat'_2SLS.csv, csv replace  // Final Table
+					esttab matrix(two_sls, transpose) using `treat'_2SLS.tex, replace      // Final Table
+					esttab matrix(two_sls, transpose) using `treat'_2SLS.csv, csv replace  // Final Table
+					}
 			restore
 			}
 			

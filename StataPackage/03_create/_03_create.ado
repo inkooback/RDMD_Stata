@@ -23,9 +23,10 @@ program define _03_create
 		}
 			
 	// pscore to each treated schools 
-	foreach t of varlist treatment*{
+	foreach t of varlist treatment_* {
 		gen pscore_`t' = pscore * `t'
 		}
+	
 	
 	// Generate D_i and C_i
 	gen Assign_x_Treat = Assignment * Treatment
