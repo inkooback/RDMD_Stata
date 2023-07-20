@@ -57,7 +57,7 @@ program define _05_analysis
 				local control_cov `control_cov' c.`cov'
 				}	
 				
-			// rv controls (categorical)
+			// rv controls
 			foreach run of varlist rv_* {
 				local control_run `control_run' `run'
 				}
@@ -82,7 +82,7 @@ program define _05_analysis
 				}
 			}
 		
-	* 3. Rename back
+	* 3. Rename back (Enrollment, Covariates, Outcomes)
 		
 		// Outcome, Enrollment
 		if $out_con_length > 0{
@@ -92,9 +92,10 @@ program define _05_analysis
 		local user_outcomes $user_Outcome_con
 		// Local user_enrolls $user_Enrollment*
 		
-		// Categorical covariates (use values)
-		
+		// covariate list
 		local covlist
+		
+		// Categorical covariates (use values)
 		if $cov_cat_length > 0{
 			rename (Covariate_cat*) ($user_Covariate_cat)
 			rename (*dum_Covariate_cat*) (cc**)
@@ -187,10 +188,11 @@ program define _05_analysis
 			}
 		
 		foreach t of varlist treatment_* {
+			if "`t'" != "treatment_0"{
 			local treat  = "`t'"
 			dis "`treat'"
 			foreach out of varlist `user_outcomes' {
-				ivreg2 `out' enroll_`t'
+				ivreg2 `out' enroll_`t' `covlist', robust partial(`covlist')
 				estimates store `out'
 				}
 			
@@ -225,6 +227,7 @@ program define _05_analysis
 			esttab matrix(ols, transpose) using `treat'_OLS.tex, replace      // Final Table
 			esttab matrix(ols, transpose) using `treat'_OLS.csv, csv replace  // Final Table
 			}
+		}
 		
 		*********** Multisector analysis ***********
 		// Conduct multi-sector analysis only when there are more than two treatment values
@@ -233,7 +236,7 @@ program define _05_analysis
 		if length > 2 {
 			
 			foreach out of varlist `user_outcomes' {
-				ivreg2 `out' i.Enroll_x_Treat
+				ivreg2 `out' i.Enroll_x_Treat `covlist', robust partial(`covlist')
 				estimates store `out'
 				}
 			
@@ -359,7 +362,6 @@ program define _05_analysis
 		
 		foreach t of varlist treatment_* {
 			preserve
-				* 6/9 Question (individual analysis for control group?)
 				if "`t'" != "treatment_0"{
 					keep if (good_`t' == 1)
 					local treat  = "`t'"
