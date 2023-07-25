@@ -34,7 +34,7 @@ program define _03_create
 	
 	// Remain only relevant variables
 	preserve
-		collapse (sum) Assign_x_Treat Enroll_x_Treat pscore_treatment* treatment* (first) Year Grade Outcome* Covariate* dum_Covariate_cat* Type, by(StudentID)
+		collapse (sum) Assign_x_Treat Enroll_x_Treat pscore_treatment* treatment* (first) Year Grade Outcome* Covariate* dum_Covariate_cat* rdmd_Type, by(StudentID)
 		
 		// Merge running variable controls
 		merge 1:1 StudentID using "runvar_control_`year'_`grade'.dta", nogen

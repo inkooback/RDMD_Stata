@@ -4,7 +4,7 @@ program define _05_analysis
     
     syntax [anything] [if]
 	
-	use "stacked.dta", clear
+	use "/Users/inkoo/Desktop/Spring 23/Atila/code/Stata/stacked.dta", clear
 	
 	* 1. Set pscores
 		
@@ -155,7 +155,7 @@ program define _05_analysis
 		mat raw = raw, A
 		
 		// Number of types
-		qui unique Type
+		qui unique rdmd_Type
 		scalar t = `r(sum)'
 		mat B = J(r, 1, t)
 		mat colnames B = Types
@@ -211,7 +211,7 @@ program define _05_analysis
 			mat ols = ols, D
 			
 			// Number of types
-			qui unique Type
+			qui unique rdmd_Type
 			scalar t = `r(sum)'
 			mat E = J(r, 1, t)
 			mat colnames E = Types
@@ -255,7 +255,7 @@ program define _05_analysis
 			mat ols = ols, D
 			
 			// Number of types
-			qui unique Type
+			qui unique rdmd_Type
 			scalar t = `r(sum)'
 			mat E = J(r, 1, t)
 			mat colnames E = Types
@@ -268,13 +268,18 @@ program define _05_analysis
 				dis "Propensity scores for `t' have `r(sum)' unique values."
 				mat F = F \ `r(sum)'
 				}
-			mat F = F \ 1
-			mat F = F[2..., 1...]
+			// mat F = F \ 1
+			mat list F
+			mat F = F[3..., 1...]
 			
 			mat colnames F = Number_of_pscores
+			
+			mat list ols
+			mat list F
+			
 			mat ols = ols, F
 			mat list ols
-			mat ols = ols[2..r-1,1...]
+			// mat ols = ols[2..r-1,1...]
 
 			esttab matrix(ols, transpose) using multi_sector_OLS.tex, replace      // Final Table
 			esttab matrix(ols, transpose) using multi_sector_OLS.csv, csv replace  // Final Table
@@ -317,7 +322,7 @@ program define _05_analysis
 		mat control = control, D
 		
 		// Number of types
-		qui unique Type
+		qui unique rdmd_Type
 		scalar t = `r(sum)'
 		mat E = J(r, 1, t)
 		mat colnames E = Types
@@ -367,7 +372,7 @@ program define _05_analysis
 					local treat  = "`t'"
 					dis "`treat'"
 					foreach out of varlist `user_outcomes' {
-						ivreg2 `out' (enroll_`t' = assign_`t') `pdummy_multi' `covlist' `control_run', robust partial(`pdummy_multi' `covlist' `control_run')
+						ivreg2 `out' (enroll_`t' = assign_`t') `pdummy_multi' `covlist' `control_run', robust partial(`pdummy_multi' `covlist' `control_run') nocollin
 						estimates store `out'
 						}
 					
@@ -386,7 +391,7 @@ program define _05_analysis
 					mat two_sls = two_sls, D
 					
 					// Number of types
-					qui unique Type
+					qui unique rdmd_Type
 					scalar t = `r(sum)'
 					mat E = J(r, 1, t)
 					mat colnames E = Types
@@ -435,7 +440,7 @@ program define _05_analysis
 			mat two_sls = two_sls, D
 			
 			// Number of types
-			qui unique Type
+			qui unique rdmd_Type
 			scalar t = `r(sum)'
 			mat E = J(r, 1, t)
 			mat colnames E = Types
