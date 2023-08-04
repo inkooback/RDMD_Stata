@@ -56,10 +56,10 @@ program define _00_Master
 	noisily{
 		
 		* Install required commands
-		ssc install unique		// Calculate unique values of types and pscores
-		ssc install ranktest 	// F-test
-		ssc install ivreg2 		// 2SLS regression
-		ssc install outreg		// Output regression results
+	 // ssc install unique		// Calculate unique values of types and pscores
+	 // ssc install ranktest 	// F-test
+	 // ssc install ivreg2 		// 2SLS regression
+	 // ssc install outreg		// Output regression results
 		
 		* Download a package for CCFT bandwith calculation
 		net install rdrobust, from(https://raw.githubusercontent.com/rdpackages/rdrobust/master/stata) replace
@@ -80,7 +80,7 @@ program define _00_Master
 		global user_Treatment = ""
 		global user_Capacity = ""
 		global user_Priority = ""
-		global user_DefaultTiebreakerIndex = ""
+		global user_TiebreakerIndex = ""
 		global user_NonLottery = ""
 		global user_TiebreakerStudentGroupIndex = ""
 		global user_Advantage = ""
@@ -102,6 +102,7 @@ program define _00_Master
 		
 		* Save file after step 1. This will be erased at the end of the step 4.
 		save "step1_finished.dta", replace
+		
 		
 		* Calculate pscores and create variables looping over years and grades
 		levelsof Year, local(yearlist)
@@ -143,6 +144,8 @@ program define _00_Master
 
 		* Conduct additional preprocessing and conduct Balance / OLS / 2SLS regressions
 		_05_analysis
+		
+		
 	}
 end
 

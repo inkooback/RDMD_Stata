@@ -27,9 +27,9 @@ program define _01_check
 			}
 		
 			* Default tie-breaker index
-			levelsof DefaultTiebreakerIndex, local(defaultlist)
+			levelsof TiebreakerIndex, local(defaultlist)
 			foreach default of local defaultlist {
-				levelsof DefaultTiebreaker if (StudentID == `student') & (DefaultTiebreakerIndex == `default'), local(breakers)
+				levelsof DefaultTiebreaker if (StudentID == `student') & (TiebreakerIndex == `default'), local(breakers)
 				local numbreakers : word count `breakers'
 				if `numbreakers' > 1 {
 					di as error "Inconsistent $user_DefaultTiebreaker detected for $user_StudentID `student' and $user_DefaultTieBreaker `default'"
@@ -156,8 +156,15 @@ program define _01_check
 					local curr_max = `rank'
 					}
 				}
-			if `curr_max' >  `r(N)' {
+			local pass = 0
+			while `pass' == 0{
+				if `curr_max' >  `r(N)' {
 				di as error "Inconsecutive $user_ChoiceRank detected for $user_StudentID `student'"
+				dis "Do you want to ignore and proceed? (Y/N)" _request(answer)
+				if "$bwtype" == "Y"{
+					local pass = 1
+					}
+				}
 			}
 		}
 	}
@@ -180,6 +187,23 @@ program define _01_check
 			}
 		}
 	}
+	
+	* No assignment / enrollment
+	quietly{	
+		levelsof StudentID, local(studentlist)
+		foreach student of local studentlist {
+			
+			* Assignment
+			summarize Assignment if StudentID == `student' & Assignment == 1
+			if `r(N)' ==  0 {
+				* Enrollment
+				summarize Enrollment if StudentID == `student' & Enrollment == 1
+				if `r(N)' ==  1 {
+					drop if StudentID == `student'
+					}
+				}
+			}
+		}
 	
 	* 07 Over capacity (assignment, enrollment)
 	quietly{	
@@ -334,13 +358,13 @@ program define _01_check
 	
 	* 12 Inconsistency between Tie-Breaker Index and Non-Lottery Index
 	quietly{	
-		levelsof DefaultTiebreakerIndex, local(defaultlist)
+		levelsof TiebreakerIndex, local(defaultlist)
 		foreach default of local defaultlist {
 			
-			levelsof NonLottery if DefaultTiebreakerIndex == `default', local(non)
+			levelsof NonLottery if TiebreakerIndex == `default', local(non)
 			local numnon : word count `non'
 			if `numnon' > 1 {
-				di as error "Inconsistent $user_NonLottery detected for $user_DefaultTiebreakerIndex `default'"
+				di as error "Inconsistent $user_NonLottery detected for $user_TiebreakerIndex `default'"
 			}
 		}
 	}
@@ -362,12 +386,12 @@ program define _01_check
 				}
 
 	* 15 No control group (0) in Treatment
-	gen Treatment_abs = abs(Treatment)
-	qui sum Treatment_abs
+	gen rdmd_Treatment_abs = abs(Treatment)
+	qui sum rdmd_Treatment_abs
 	if `r(min)' > 0{
 				di as error "No 0 (contol group) in Treatment. Control group is required."
 				}		
-	drop Treatment_abs
+	drop rdmd_Treatment_abs
 	
 	* 16 Advantage not in the proper range
 	qui sum Advantage

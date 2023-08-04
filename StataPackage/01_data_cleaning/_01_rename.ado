@@ -119,7 +119,7 @@ program define _01_rename
 		rename $capacity Capacity	
 		
 	// Priority
-		dis "Please enter the name of your variable for the priority. If your data have no priority structure and therefore does not have a priority variable, simply press enter." _request(priority)
+		dis "Please enter the name of your variable for the priority. Please make sure that a lower number corresponds to a higher priority, with 0 indicating a guaranteed assignment. If your data have no priority structure and therefore does not have a priority variable, simply press enter." _request(priority)
 		
 		// If user pressed enter
 		if "$priority" == ""{
@@ -150,8 +150,8 @@ program define _01_rename
 				dis "Input your variable name for (default) tie-breaker index" _request(default)
 				}
 			}
-		global user_DefaultTiebreakerIndex = "$default"
-		rename $default DefaultTiebreakerIndex	
+		global user_TiebreakerIndex = "$default"
+		rename $default TiebreakerIndex	
 		
 	// Non-lottery indicator
 		dis "Input your variable name for NonLottery indicator. Values of this variable has to be binary (lottery = 0, non-lottery: 1). Press enter if your data have only lottery tie-breakers and thus don't have NonLottery indicator variable." _request(nonlottery)	
@@ -272,7 +272,7 @@ program define _01_rename
 			
 			if $cov_cat_length > 0{
 				
-				// Throw warning if the inpud is not in the varlist
+				// Throw warning if the input is not in the varlist
 				forvalues i = 1 / $cov_cat_length{
 					local cov: word `i' of $cov_cat_list
 					if strpos(r(varlist), "`cov'") == 0{
@@ -309,7 +309,7 @@ program define _01_rename
 			
 			if $cov_con_length > 0{
 				
-				// Throw warning if the inpud is not in the varlist
+				// Throw warning if the input is not in the varlist
 				forvalues i = 1 / $cov_con_length{
 					local cov: word `i' of $cov_con_list
 					if strpos(r(varlist), "`cov'") == 0{
@@ -349,7 +349,7 @@ program define _01_rename
 			
 			if $out_cat_length > 0 {
 				
-				// throw warning if the inpud is not in the varlist
+				// throw warning if the input is not in the varlist
 				forvalues i = 1 / $out_cat_length{
 					local out: word `i' of $out_cat_list
 					if strpos(r(varlist), "`out'") == 0{
@@ -379,20 +379,20 @@ program define _01_rename
 			*/
 			
 			// 2) Countinuous
-			dis "Input a list (parsed by space) of your variable names for the outcome variables in your dataset (Example: math reading). You must have at least one outcome variable." _request(out_con_list)
+			dis "Input a list (parsed by space) of your variable names for the outcome variables in your dataset (Example: math reading). You must have at least one outcome variable. These variables may store byte, integer, long, float or double type data. Please make sure that these variables are continuous variables, not categorical." _request(out_con_list)
 			
 			// Count the number of 
 			global out_con_length : word count $out_con_list
 			qui ds
 			
 			if $out_con_length > 0 {
-				// Throw warning if the inpud is not in the varlist
+				// Throw warning if the input is not in the varlist
 				forvalues i = 1 / $out_con_length{
 					local out: word `i' of $out_con_list
 					if strpos(r(varlist), "`out'") == 0{
 						while strpos(r(varlist), "`out'") == 0 {
 							di as error "variable `out' not found"
-							dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset. You must have at least one outcome variable." _request(out_con_list)
+							dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset. You must have at least one outcome variable. These variables may store byte, integer, long, float or double type data. Please make sure that these variables are continuous variables, not categorical." _request(out_con_list)
 							local out: word `i' of $out_cat_list
 							}
 						}
@@ -404,7 +404,7 @@ program define _01_rename
 					if strpos(r(varlist), "`out'") == 0{
 						while strpos(r(varlist), "`out'") == 0 {
 							di as error "variable `out' not found"
-							dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset. You must have at least one outcome variable." _request(out_con_list)
+							dis "Input a list (parsed by space) of your variable names for the rest (continuous) outcome variables in your dataset. You must have at least one outcome variable. These variables may store byte, integer, long, float or double type data. Please make sure that these variables are continuous variables, not categorical." _request(out_con_list)
 							local out: word `i' of $out_con_list
 							}
 						}

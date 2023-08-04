@@ -12,50 +12,50 @@ program define _02_pscore
 	local grade = $Grade
 	
 	* 0. Record type (preference, priority) of each applicant
-	egen Type = concat(SchoolID Priority), punct(", ")
-	bysort StudentID : replace Type = Type[_n-1] + ", " + Type[_n] if inrange(_n, 2, _N) 
-	bysort StudentID : replace Type = Type[_N-1] 
+	egen rdmd_Type = concat(SchoolID Priority), punct(", ")
+	bysort StudentID : replace rdmd_Type = rdmd_Type[_n-1] + ", " + rdmd_Type[_n] if inrange(_n, 2, _N) 
+	bysort StudentID : replace rdmd_Type = rdmd_Type[_N-1] 
 	
 	* 1. Generate marginal priority (priority group with last offer)
-	bys SchoolID : egen MarginalPriority = max(Priority * Assignment)
-	format MarginalPriority %12.0g
+	bys SchoolID : egen rdmd_MarginalPriority = max(Priority * Assignment)
+	format rdmd_MarginalPriority %12.0g
 
 	// Generate marginal indicator
-	gen Marginal = (Priority == MarginalPriority)
+	gen rdmd_Marginal = (Priority == rdmd_MarginalPriority)
 	
 	// Applicant rank
-	gen rank = EffectiveTiebreaker
+	gen rdmd_rank = EffectiveTiebreaker
 		
 	// Generate indicator for missing ranks
-	gen indi_missing_rank_mod = (rank == . & NonLottery == 1)
+	gen indi_missing_rank_mod = (rdmd_rank == . & NonLottery == 1)
 
 	// Replace missing RVs with max x 1000
-	sum rank
-	replace rank = r(max) * 1000 if indi_missing_rank_mod == 1
+	sum rdmd_rank
+	replace rdmd_rank = r(max) * 1000 if indi_missing_rank_mod == 1
 
 	// Rescale running variables to (0, 1], as described in the paper (Breaking Ties p. 134)
 	// Notice that we do that within the marginal group only
-	bys DefaultTiebreakerIndex : egen runvar_max = max(rank) if (Marginal == 1 & indi_missing_rank_mod == 0)
-	bys DefaultTiebreakerIndex : egen runvar_min = min(rank) if (Marginal == 1 & indi_missing_rank_mod == 0)
+	bys TiebreakerIndex : egen runvar_max = max(rdmd_rank) if (rdmd_Marginal == 1 & indi_missing_rank_mod == 0)
+	bys TiebreakerIndex : egen runvar_min = min(rdmd_rank) if (rdmd_Marginal == 1 & indi_missing_rank_mod == 0)
 
 	// Keep original rank
-	gen rank_mod_no_rescale = rank
+	gen rank_mod_no_rescale = rdmd_rank
 	
 	// Rescale marginal group for the tie-breakers (lottery / non-lottery)
-	replace rank = (rank_mod_no_rescale - runvar_min + 1) / (runvar_max -  runvar_min + 1) if (Marginal == 1)
+	replace rdmd_rank = (rank_mod_no_rescale - runvar_min + 1) / (runvar_max -  runvar_min + 1) if (rdmd_Marginal == 1)
 	
 	// Non-marginal applicants
-	replace rank = 1 if (Marginal != 1)
+	replace rdmd_rank = 1 if (rdmd_Marginal != 1)
 	
 	// Applicants with missing ranks
-	replace rank = 99 if indi_missing_rank_mod == 1
+	replace rdmd_rank = 99 if indi_missing_rank_mod == 1
 
 	// Assert re-scaling was successful
-	summarize rank if indi_missing_rank_mod == 0
+	summarize rdmd_rank if indi_missing_rank_mod == 0
 	assert `r(max)' <= 1 & `r(min)' > 0
 	
 	* 2. Set cutoff as the last *marginal* student who gets an offer
-	bys SchoolID: egen double Cutoff  = max(Assignment * Marginal * rank)
+	bys SchoolID: egen double Cutoff  = max(Assignment * rdmd_Marginal * rdmd_rank)
 	gen double DefaultCutoff  = min(1, Cutoff / Advantage)
 	
 *======================================= 3. Calculate bandwidth ====================================================================================
@@ -64,15 +64,15 @@ program define _02_pscore
 	egen NonLotteryID = group(SchoolID) if NonLottery == 1
 	
 	// Generate centered rank variable (cutoff = 0)
-	gen Centered = rank - Cutoff
+	gen Centered = rdmd_rank - Cutoff
 	
 	// Generate variable that checks for marginal applicants above the cutoff
-	bys SchoolID: egen FullyRanked = max(Marginal * (Centered > 0 ) * NonLottery)
+	bys SchoolID: egen FullyRanked = max(rdmd_Marginal * (Centered > 0 ) * NonLottery)
 	la var FullyRanked "Flag if non-lottery program had marginal students with Centered > 0 i.e. students ranked above the cutoff"
 	
 	preserve
 		* Keep only marginal students for the bandwidths
-		keep if Marginal == 1
+		keep if rdmd_Marginal == 1
 		
 		* Make a list of the Outcome variables
 		ds Outcome*
@@ -98,13 +98,13 @@ program define _02_pscore
 
 				* IK
 				if ("`bw_type'" == "IK") | ("`bw_type'" == "ik") {
-					noi cap: _02_rdob_mod2 `test' Centered if (NonLotteryID == `i') & (FullyRanked == 1) & (Marginal == 1), ck(5.40)
+					noi cap: _02_rdob_mod2 `test' Centered if (NonLotteryID == `i') & (FullyRanked == 1) & (rdmd_Marginal == 1), ck(5.40)
 					if _rc == 0 replace `bw_type'_`test' = `r(h_opt)' if NonLotteryID == `i'
 					}
 				
 				* CCFT
 				else if ("`bw_type'" == "CCFT") | ("`bw_type'" == "ccft") {
-					noi cap: _02_rdbwselect `test' Centered if (NonLotteryID == `i') & (FullyRanked == 1) & (Marginal == 1), kernel(uniform) c(0)
+					noi cap: _02_rdbwselect `test' Centered if (NonLotteryID == `i') & (FullyRanked == 1) & (rdmd_Marginal == 1), kernel(uniform) c(0)
 					if _rc == 0 replace `bw_type'_`test' = `e(h_mserd)' if NonLotteryID == `i'
 					}
 				
@@ -148,16 +148,16 @@ program define _02_pscore
 		5 applicants on either side of the cutoff within the bandwidth, and then recalculate whether an applicant is in the bandwidth */
 
 	// Generate indicator for being in the bandwidth
-	gen in_bw = (Centered > -bw) &  (Centered <= bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
+	gen in_bw = (Centered > -bw) &  (Centered <= bw) & (rdmd_Marginal == 1) & !missing(bw) if (NonLottery == 1)
 
 	// Generate indicator for being below the bandwidth
-	gen below_bw = (Centered <= -bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
+	gen below_bw = (Centered <= -bw) & (rdmd_Marginal == 1) & !missing(bw) if (NonLottery == 1)
 	
 	// Generate indicator for being above the bandwidth
-	gen above_bw = (Centered > bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
+	gen above_bw = (Centered > bw) & (rdmd_Marginal == 1) & !missing(bw) if (NonLottery == 1)
 
 	// Generate check that each applicant is at max in/below/above the bandwidth
-	egen check = rowtotal(in_bw below_bw above_bw) if (Marginal == 1) & (NonLottery == 1) & !missing(bw)
+	egen check = rowtotal(in_bw below_bw above_bw) if (rdmd_Marginal == 1) & (NonLottery == 1) & !missing(bw)
 	sum check
 	assert `r(max)' == 1 & `r(min)' == 1
 	drop check
@@ -226,16 +226,16 @@ program define _02_pscore
 	drop in_bw below_bw above_bw
 	
 	// Generate indicator for being in the bandwidth
-	gen in_bw = (Centered > -bw) &  (Centered <= bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
+	gen in_bw = (Centered > -bw) &  (Centered <= bw) & (rdmd_Marginal == 1) & !missing(bw) if (NonLottery == 1)
 
 	// Generate indicator for being below the bandwidth
-	gen below_bw = (Centered <= -bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
+	gen below_bw = (Centered <= -bw) & (rdmd_Marginal == 1) & !missing(bw) if (NonLottery == 1)
 	
 	// Generate indicator for being above the bandwidth
-	gen above_bw = (Centered > bw) & (Marginal == 1) & !missing(bw) if (NonLottery == 1)
+	gen above_bw = (Centered > bw) & (rdmd_Marginal == 1) & !missing(bw) if (NonLottery == 1)
 
 	// Check
-	egen check = rowtotal(in_bw below_bw above_bw) if (Marginal == 1) & (NonLottery == 1) & !missing(bw)
+	egen check = rowtotal(in_bw below_bw above_bw) if (rdmd_Marginal == 1) & (NonLottery == 1) & !missing(bw)
 	sum check
 	assert `r(max)' == 1 & `r(min)' == 1
 	drop check
@@ -251,23 +251,23 @@ program define _02_pscore
 		// Applicant clears marginal priority (Theta^a)
 		// or is marginal but below the bandwidth at screened program or below
 		// or at the cutoff at screened program where we couldn't get a bandwidth 
-		gen t_a = (MarginalPriority > Priority) ///
-			| (NonLottery == 1 & Marginal == 1 & below_bw == 1 ) ///
-			| (NonLottery == 1 & Marginal == 1 & Centered <= 0 & missing(bw))
+		gen t_a = (rdmd_MarginalPriority > Priority) ///
+			| (NonLottery == 1 & rdmd_Marginal == 1 & below_bw == 1 ) ///
+			| (NonLottery == 1 & rdmd_Marginal == 1 & Centered <= 0 & missing(bw))
 
 	*	Never seated
 		// Applicant fails to clear marginal priority (Theta^n)
 		// or is marginal but above the bandwidth at screened program 
 		// or above the cutoff at screened program where we couldn't get a bandwidth 
-		gen t_n = (MarginalPriority < Priority ) ///
-			| (NonLottery == 1 & Marginal == 1 & above_bw == 1 )   ///
-			| (NonLottery == 1 & Marginal == 1 & Centered > 0 & missing(bw))
+		gen t_n = (rdmd_MarginalPriority < Priority ) ///
+			| (NonLottery == 1 & rdmd_Marginal == 1 & above_bw == 1 )   ///
+			| (NonLottery == 1 & rdmd_Marginal == 1 & Centered > 0 & missing(bw))
 			
 	*	Conditionally seated
 		// Applicant is marginal and in bandwidth at screened program
 		// or marginal at a lottery school
-		gen t_c = (NonLottery == 1 & MarginalPriority == Priority & in_bw == 1)  ///
-			| (NonLottery == 0 & MarginalPriority == Priority)
+		gen t_c = (NonLottery == 1 & rdmd_MarginalPriority == Priority & in_bw == 1)  ///
+			| (NonLottery == 0 & rdmd_MarginalPriority == Priority)
 
 	// Check that we partition the set of applicants
 	egen check = rowtotal(t_?)
@@ -278,75 +278,104 @@ program define _02_pscore
 *=================================================================================================================================
 	
 	* 5. Calculate MID
-
+	
+	levelsof TiebreakerIndex, local(tbindexlist)
+	foreach tbindex of local tbindexlist {
+		
 	* 	Case 1: ever get more preferred
 		// Applicant is ever in t=a at any schools above school s
 		// (for screened schools you are marginal at the school but are below the window left of the bandwidth)
+		
 		sort StudentID ChoiceRank
-		gen ever_seated_more_preferred = 0
-		la var ever_seated_more_preferred "1 if you ever cleared marginal priority at a more preferred school"
-		by StudentID: replace ever_seated_more_preferred =  max(ever_seated_more_preferred[_n-1], t_a[_n-1]) if _n > 1  // maximum so that if its ever 1 the following chain will be 1.
-
+		gen ever_seated_more_preferred_`tbindex' = 0
+		la var ever_seated_more_preferred_`tbindex' "1 if you ever cleared marginal priority at a more preferred school using a specific tie-breaker"
+		by StudentID: replace ever_seated_more_preferred_`tbindex' =  max(ever_seated_more_preferred_`tbindex'[_n-1], t_a[_n-1] * (TiebreakerIndex[_n-1] == `tbindex')) if _n > 1  
+		// maximum so that if its ever 1 the following chain will be 1. 
+		
 	* 	Case 2: never get more preferred
 		// Applicant is always in t=n at any higher ranked school
 		sort StudentID ChoiceRank
 		// By convention MID is 0 at first choice, because applicant can never get a better choice
-		gen never_get_more_preferred = 1
-		la var never_get_more_preferred "Student never clears marginal priority at more preferred schools"
-		by StudentID: replace never_get_more_preferred =  min(never_get_more_preferred[_n-1], t_n[_n-1]) if _n > 1		// minimum so that if its ever 0 the following chain will be 0.
+		gen never_get_more_preferred_`tbindex' = 1
+		la var never_get_more_preferred_`tbindex' "Student never clears marginal priority at more preferred schools using a specific tie-breaker"
+		by StudentID: replace never_get_more_preferred_`tbindex' =  0 if ((never_get_more_preferred_`tbindex'[_n-1] == 0) | ((t_n[_n-1] == 0) & (TiebreakerIndex[_n-1] == `tbindex'))) & (_n > 1)		
+		// minimum so that if its ever 0 the following chain will be 0.
 
 	* 	Case 3: conditionally get more preferred
 		// Applicant is in t=c in at least one more preferred school, but never t=a
 
 		// Check if applicant is ever marginal at a more preferred school
 		sort StudentID ChoiceRank
-		gen ever_marginal_more_preferred = 0
-		by StudentID: replace ever_marginal_more_preferred = max(ever_marginal_more_preferred[_n-1], t_c[_n-1]) if _n > 1
+		gen ever_marginal_more_preferred_`tbindex' = 0
+		by StudentID: replace ever_marginal_more_preferred_`tbindex' = max(ever_marginal_more_preferred_`tbindex'[_n-1], t_c[_n-1] * (TiebreakerIndex[_n-1] == `tbindex')) if _n > 1
 
 		// Check if applicant is always either t_c or t_n at more preferred schools (never t_a)
-		gen either_t_cn = max(t_c, t_n)
-		gen always_t_cn_more_preferred = 1
-		by StudentID: replace always_t_cn_more_preferred =  min(always_t_cn_more_preferred[_n-1], either_t_cn[_n-1]) if _n > 1
+		gen either_t_cn_`tbindex' = max(t_c, t_n)
+		gen always_t_cn_more_preferred_`tbindex' = 1
+		by StudentID: replace always_t_cn_more_preferred_`tbindex' = 0 if ((always_t_cn_more_preferred_`tbindex'[_n-1] == 0) | ((either_t_cn_`tbindex'[_n-1] == 0) & (TiebreakerIndex[_n-1] == `tbindex'))) & (_n > 1)
 
 		// Check if applicant is t_a but with at least one marginal school (non-degenerate better set risk)
-		gen sometimes_get_more_preferred = (always_t_cn_more_preferred == 1) & (ever_marginal_more_preferred == 1)
-		la var sometimes_get_more_preferred "You aren't guaranteed a spot at a higher rank school but you are at least marginal in a more preferred school"
+		gen sometimes_get_more_preferred_`tbindex' = (always_t_cn_more_preferred_`tbindex' == 1) & (ever_marginal_more_preferred_`tbindex' == 1)
+		la var sometimes_get_more_preferred_`tbindex' "You aren't guaranteed a spot at a higher rank school but you are at least marginal in a more preferred school"
+		
+		
+		// Check that these definitions partition the set of applicants
+		egen check = rowtotal(ever_seated_more_preferred_`tbindex'   never_get_more_preferred_`tbindex'     sometimes_get_more_preferred_`tbindex')
+		su check
+		assert (`r(max)' == 1) & (`r(min)'  == 1)
+		drop check
+		
 
-	// Check that these definitions partition the set of applicants
-	egen check = rowtotal(sometimes_get_more_preferred   ever_seated_more_preferred   never_get_more_preferred)
-	su check
-	assert (`r(max)' == 1) & (`r(min)'  == 1)
-	drop check
-
-	***	MID computation
+		***	MID computation
 		// MID boils down to risk generated by lottery schools in the better set
 		// Initialize at missing. Should not have missing for lottery applications
-		gen double mid = .
+		gen double mid_`tbindex' = .
 
-	* Case 1
+		* Case 1
 		// Set to 0 if applicant is always in t_n at more preferred lottery schools
-		replace mid = 0 if (never_get_more_preferred == 1)
+		replace mid_`tbindex' = 0 if (never_get_more_preferred_`tbindex' == 1)
 
-	* Case 2
+		* Case 2
 		// Set to 1 if applicant is ever t_a at a more preferred lottery school
 		// (explicitly restricting to lottery schools doesn't change p-score calculation since risk will be degenerate anyway)
-		replace mid = 1 if (ever_seated_more_preferred == 1)
+		replace mid_`tbindex' = 1 if (ever_seated_more_preferred_`tbindex' == 1)
 
-	* Case 3
+		* Case 3
 		// Non-degenerate better set risk
 		sort StudentID ChoiceRank
+		
 		// Only consider the lagged cutoff if applicant is t_c at that lottery school.
-		by StudentID: gen lagged_lottery_cutoff = DefaultCutoff[_n-1] * t_c[_n-1] * (NonLottery[_n-1] == 0)
-		by StudentID: replace mid = max(mid[_n-1], lagged_lottery_cutoff) if (sometimes_get_more_preferred == 1)
+		by StudentID: gen lagged_lottery_cutoff_`tbindex' = DefaultCutoff[_n-1] * t_c[_n-1] * (NonLottery[_n-1] == 0) * (TiebreakerIndex[_n-1] == `tbindex')
+		by StudentID: replace mid_`tbindex' = max(mid_`tbindex'[_n-1], lagged_lottery_cutoff_`tbindex') if (sometimes_get_more_preferred_`tbindex' == 1)
 		
 		// Replace first lottery choice to zero.
-		by StudentID: replace mid = 0 if (_n == 1)
+		sort StudentID ChoiceRank
+		by StudentID: replace mid_`tbindex' = 0 if (_n == 1)
 
 		// Fill in mid for non lottery schools, we need this to calculate the pscores
 		sort StudentID ChoiceRank
-		by StudentID: replace mid = 0 if (_n ==1)
-		by StudentID: replace mid = mid[_n-1] if (_n > 1) & (mid == .)
+		by StudentID: replace mid_`tbindex' = mid_`tbindex'[_n-1] if (_n > 1) & (mid_`tbindex' == .)
+
+		}
 	
+	* 3 preparations for the next step
+	
+	// 1) the real ever_seated_more_preferred
+	egen ever_seated_more_preferred = rowmax(ever_seated_more_preferred_*)
+	
+	// 2) generate one_minus_mid for each lottery schools (needed for lambda calculation)
+	levelsof TiebreakerIndex if NonLottery == 0 , local(tbindexlist)
+	foreach tbindex of local tbindexlist {
+		gen double one_minus_mid_`tbindex' = (1 - mid_`tbindex')
+		}
+	
+	// 3) the real mid (needed for the pscore calculation)
+	gen mid = .
+	levelsof TiebreakerIndex, local(tbindexlist)
+	foreach tbindex of local tbindexlist {
+		replace mid = mid_`tbindex' if TiebreakerIndex == `tbindex'
+		}
+
 *======================================================================================================================
 	
 	* 6. Calculate propensity scores (pscores)
@@ -373,22 +402,21 @@ program define _02_pscore
 
 		* 	Degenerate case
 			replace pscore = 0 if (t_n == 1) | (ever_seated_more_preferred == 1)
-
-		*	Lottery number truncation
-			gen double one_minus_mid = (1 - mid)
-			la var one_minus_mid "Lottery number truncation"
 			
 		*	Product of one-minus-mid (lambda)
-			bysort StudentID : gen double lambda = one_minus_mid[1]
-			by StudentID : replace lambda = lambda[_n-1] * one_minus_mid if (_n > 1) & (NonLottery == 0)
+			gen lambda = 1
+			
+			// only look at the lottery schools. 
+			foreach omm of varlist one_minus_mid_* { 
+				  replace lambda = lambda * `omm' 
+				  }
 
 		*	Better set risk only
-			replace pscore = 1 if (t_a == 1) & (ever_seated_more_preferred == 0)
 			replace pscore = lambda * 0.5^(number_of_bw) ///
 				if (t_a == 1) & (ever_seated_more_preferred == 0)
 
 		*	Lottery school with risk at s
-			replace pscore = lambda * 0.5^(number_of_bw) * max(0, (DefaultCutoff - mid) / one_minus_mid) ///
+			replace pscore = lambda * 0.5^(number_of_bw) * max(0, (DefaultCutoff - mid) / (1 - mid)) ///
 				if (t_c == 1) & (ever_seated_more_preferred == 0) & (NonLottery == 0)
 
 		*	Screened school with risk at s
@@ -400,6 +428,7 @@ program define _02_pscore
 
 		compress
 		
+		save "pscore_`year'_`grade'.dta", replace
 		// Save tempfiles
 		tempfile pscore_`year'_`grade'
 		save `pscore_`year'_`grade''
@@ -455,6 +484,7 @@ program define _02_pscore
 	
 		save "runvar_control_`year'_`grade'.dta", replace
 	restore
+	
 end
 
 
