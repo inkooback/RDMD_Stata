@@ -320,7 +320,7 @@ program define _02_pscore
 		
 		
 		// Check that these definitions partition the set of applicants
-		egen check = rowtotal(ever_seated_more_preferred_`tbindex'   never_get_more_preferred_`tbindex'     sometimes_get_more_preferred_`tbindex')
+		egen check = rowtotal(ever_seated_more_preferred_`tbindex'    never_get_more_preferred_`tbindex'     sometimes_get_more_preferred_`tbindex')
 		su check
 		assert (`r(max)' == 1) & (`r(min)'  == 1)
 		drop check
@@ -358,7 +358,7 @@ program define _02_pscore
 
 		}
 	
-	* 3 preparations for the next step
+	* Three preparations for the next step
 	
 	// 1) the real ever_seated_more_preferred
 	egen ever_seated_more_preferred = rowmax(ever_seated_more_preferred_*)
