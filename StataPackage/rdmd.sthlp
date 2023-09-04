@@ -112,7 +112,7 @@
 {synopt :{cmd:Outcomes}}Outcome variables. These should be continuous variables. User will be asked to provide the list (parsed by space) of the continuous outcome variables. These variables may store {cmd:byte}, {cmd:int}, {cmd:long}, {cmd:float} or {cmd:double} type data.{p_end}
 {synopt :{cmd:Covariates}}Covariates. These can be either continuous or categorical variables. User will be asked to provide the list (parsed by space) of the categorical covariates and then continuous covariates. These variables may store {cmd:byte}, {cmd:int}, {cmd:long}, {cmd:float}, {cmd:double}, or {cmd:string} type data.{p_end}
 {synoptline}
-{p 4 8}* These five variables are optional if these concepts are irrelevant to the context user is working on or there is no variation in these variables. In such cases, if the user does not have these variables in the dataset, user can simply press enter when prompted to provide these variable names. The program will automatically generate a variable with a single value and this variable will not have any impact on the analysis conducted later.{p_end}
+{p 4 8}* These variables are optional if these concepts are irrelevant to the context user is working on or there is no variation in these variables. In such cases, if the user does not have these variables in the dataset, user can simply press enter when prompted to provide these variable names. The program will automatically generate a variable with a single value and this variable will not have any impact on the analysis conducted later.{p_end}
 
     {hline}
 
@@ -133,15 +133,18 @@
 {synopt :{cmd:5} {cmd:[Error]}} An applicant chose the same school for multiple ranks{p_end}
 {synopt :{cmd:6} {cmd:[Warning]}} Inconsecutive choice ranks (e.g., 1,2,4){p_end}
 {synopt :{cmd:7} {cmd:[Error]}} An applicant is assigned or enrolled to multiple programs{p_end}
-{synopt :{cmd:8} {cmd:[Warning]}} A program is assigned or enrolled with more applicants than its capacity and contains at least one applicant who is not guaranteed an assignment{p_end}
-{synopt :{cmd:9} {cmd:[Error]}} An applicant is not assigned to a school although the applicant was guaranteed an assignment to that school and she was not assigned to any school she prefers to that school{p_end}
-{synopt :{cmd:10} {cmd:[Error]}} An applicant is assigned to a school {it:s} although the applicant was guaranteed an assignment to a school {it:s'} that she prefers to {it:s} and was not assigned to {it:s'}{p_end}
-{synopt :{cmd:11} {cmd:[Error]}} An applicant is assigned to school {it:s}, even though (1) she prefers school {it:s'} to {it:s}, (2) her applicant position at {it:s'} was better than her position at {it:s}, (3) there were still available spots at {it:s'}, (4) and she is eligible at {it:s'}{p_end}
-{synopt :{cmd:12} {cmd:[Warning]}} Abnormally large value found in a column that is unlikely to have a huge outlier (Student ID, Grade, Choice Rank, School ID, Priority, Default Tie-breaker Index){p_end}
-{synopt :{cmd:13} {cmd:[Warning]}} A school uses non-lottery tie-breaker, and correlation between Priority and Tie-breaker within the school approximates 1{p_end}
-{synopt :{cmd:14} {cmd:[Error]}} No variation in treatment{p_end}
-{synopt :{cmd:15} {cmd:[Error]}} No 0 (control) in treatment{p_end}
-{synopt :{cmd:16} {cmd:[Error]}} Advantage not in the range (0,1]{p_end}
+{synopt :{cmd:8} {cmd:[Error]}} An applicant is not assigned or not enrolled to any program{p_end}
+{synopt :{cmd:9} {cmd:[Warning]}} A program is assigned or enrolled with more applicants than its capacity and contains at least one applicant who is not guaranteed an assignment{p_end}
+{synopt :{cmd:10} {cmd:[Error]}} An applicant is not assigned to a school although the applicant was guaranteed an assignment to that school and she was not assigned to any school she prefers to that school{p_end}
+{synopt :{cmd:11} {cmd:[Error]}} An applicant is assigned to a school {it:s} although the applicant was guaranteed an assignment to a school {it:s'} that she prefers to {it:s} and was not assigned to {it:s'}{p_end}
+{synopt :{cmd:12} {cmd:[Error]}} An applicant is assigned to school {it:s}, even though (1) she prefers school {it:s'} to {it:s}, (2) her applicant position at {it:s'} was better than her position at {it:s}, (3) there were still available spots at {it:s'}, (4) and she is eligible at {it:s'}{p_end}
+{synopt :{cmd:13} {cmd:[Warning]}} Abnormally large value found in a column that is unlikely to have a huge outlier (Student ID, Grade, Choice Rank, School ID, Priority, Default Tie-breaker Index){p_end}
+{synopt :{cmd:14} {cmd:[Warning]}} A school uses non-lottery tie-breaker, and correlation between Priority and Tie-breaker within the school approximates 1{p_end}
+{synopt :{cmd:15} {cmd:[Error]}} No variation in treatment{p_end}
+{synopt :{cmd:16} {cmd:[Error]}} No 0 (control) in treatment{p_end}
+{synopt :{cmd:17} {cmd:[Error]}} Advantage not in the range (0,1]{p_end}
+{synopt :{cmd:18} {cmd:[Error]}} Inconsistency between Tie-Breaker Index and Non-Lottery Index{p_end}
+{synopt :{cmd:19} {cmd:[Error]}} NonLottery is not binary {p_end}
 {synoptline}
 	
 
@@ -194,8 +197,28 @@ The values in the table represents the regression coefficients of each covariate
     {hline}
 
 	
+{marker problem}{...}
+{title:Data Problems}
+
+{p 4 8}{p_end}
+
+{synoptset 10 tabbed}{...}
+{marker number}{...}
+{synopthdr:Number}
+{synoptline}
+{synopt :{cmd:1}} If data does not contain capacity variable, {p_end}
+{synopt :{cmd:2}} If data does not contain eligibility variable, {p_end}
+{synopt :{cmd:3}} If data contains an applicant who is not assigned to any program, code drops that applicant.{p_end}
+{synopt :{cmd:4}} If data contains an applicant who is not enrolled in any program, code drops that applicant.{p_end}
+{synopt :{cmd:5}} For an under-subscribed non-lottery school, bandwidth cannot be calculated and the propensity score for such school is determined by the probability of getting into higher ranked schools. {p_end}
+{synoptline}
+	
+	
 {marker examples}{...}
 {title:Example: sample data}
+
+{p 4 8}Sample data can be found in the following website:{p_end}
+{p 8 8}{browse "https://github.com/inkooback/RDMD_Stata/":https://github.com/inkooback/RDMD_Stata/}{p_end}
 
 {p 4 8}Setup{p_end}
 {p 8 8}{cmd:. use sample_data.dta}{p_end}
